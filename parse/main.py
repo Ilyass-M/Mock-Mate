@@ -55,8 +55,10 @@ def cv_extract(data):
 def parse_cv(path):
     data = read_cv(path)
     data = cv_extract(data)
-    print(data)
-
+    # Write the data to a file
+    with open('parsed_cv.txt', 'w') as f:
+        f.write(data)
+    return data
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python main.py <path_to_cv>")

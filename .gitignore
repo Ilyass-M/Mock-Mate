@@ -29,15 +29,16 @@ build/
 *.log
 
 # Data files
-*.pdf
-*.json
+# Ignore all .txt files...
 *.txt
+# ...but NOT requirements.txt (negate the previous rule)
+!requirements.txt
 
 # Temporary files
 *.tmp
 *.swp
 
-# OS generated files #
+# OS generated files
 .DS_Store
 Thumbs.db
 
