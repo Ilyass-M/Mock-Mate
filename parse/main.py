@@ -34,6 +34,7 @@ def cv_extract(data):
     11. any other information (if any)
     12. location (if any)
     13. summary (if any)
+    14. Combine all the Skills and Technologies into a single list
     Give the extracted information in json format only
     '''
     
