@@ -33,7 +33,8 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Application definition
-INSTALLED_APPS = [
+INSTALLED_APPS = [ 
+    "daphne",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -42,7 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'AiQuetionare',
 ]
-
+ASGI_APPLICATION = "mockmate.asgi.application"
 
 # ALLOWED_HOSTS = ['*']
 # CORS_ALLOW_ALL_ORIGINS = True
