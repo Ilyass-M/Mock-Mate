@@ -38,7 +38,8 @@ def cv_extract(data):
     Give the extracted information in json format only
     '''
     
-    client = genai.Client(api_key=os.getenv("GENAI_API_KEY"))
+    # client = genai.Client(api_key=os.getenv("GENAI_API_KEY"))
+    client = genai.Client(api_key= 'AIzaSyBTLRYmyB72eKXVBOmacHTKymsl7kuR1Xs')
     user_data = data
     
     response = client.models.generate_content(
@@ -49,7 +50,7 @@ def cv_extract(data):
             max_output_tokens=1500,
             temperature=0.0
         ))
-    
+    print(response)
     return response.text
     
 
@@ -65,7 +66,5 @@ def parse_cv(path):
 def get_data_from_cv(path):
     data = read_cv(path)
     data = cv_extract(data)
-    # Write the data to a file
-    # with open('parsed_cv.txt', 'w') as f:
-    #     f.write(data)
+    print(data)
     return data

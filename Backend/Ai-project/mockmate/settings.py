@@ -28,10 +28,12 @@ SECRET_KEY = 'django-insecure-40a6uk*tfjnyjadr0i8&3a03_4=kc@syy3tb76x=fneam$n*lz
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
+import os
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Application definition
-
+CORS_ALLOW_ALL_ORIGINS = True
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

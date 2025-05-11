@@ -129,7 +129,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                     httponly=True,
                     secure=True,
                     samesite='Lax',
-                    max_age=3600,  # 1 hour
+                    max_age=36000,  # 1 hour
                     path='/'
                 )
 
@@ -241,7 +241,9 @@ class candidateView(APIView):
             raise CustomError(message, code=code, details=details, status_code=status_code)
     def post(self, request):
         try:
-            serializer = CandidateSerializer(data=request.data)
+            # serializer = CandidateSerializer(data=request.data)
+            serializer = CandidateSerializer(data=request.data, context={'request': request})
+            # serializer = self.get_serializer(data=request.data, context={'request': request})
             if serializer.is_valid():
                 candidate = serializer.save()
                 read_serializer = CandidateSerializer(candidate)

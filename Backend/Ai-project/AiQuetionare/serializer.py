@@ -111,27 +111,53 @@ class CandidateSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'cv': {'required': False},
             'skills': {'required': False},
+            'user': {'required': True},
         }
     def create(self, validated_data):
-        resume = validated_data.pop('resume', None)
-        if resume:
-            validated_data['resume'] = resume
+        try:
+            # Extract the user ID
+            user_id = self.context['request'].data.get('user_id')
+            if not user_id:
+                raise serializers.ValidationError("User ID is required to create a candidate.")
+
+            # Fetch the user instance
+            try:
+                user = CustomUser.objects.get(id=user_id)
+            except CustomUser.DoesNotExist:
+                raise serializers.ValidationError("User with the given ID does not exist.")
+
+            # Create the candidate instance
+            candidate = Candidate.objects.create(user=user, **validated_data)
+
+            # Handle the resume file
+            resume = validated_data.pop('resume', None)
+            if resume:
+                print("Resume:", resume)
+                extracted_skills = get_data_from_cv(resume)
+                for skill_name in extracted_skills:
+                    a = 1
+                    # print("Extracted Skill:", skill_name)
+                    # skill, _ = Skill.objects.get_or_create(name=skill_name)
+                    # candidate.skills.add(skill)
+
+            # Add explicitly provided skills
             skills_data = validated_data.pop('skills', [])
-            if skills_data.len() == 0:
-                get_data_from_cv(resume)
-                Skill.objects.create(
-                    name=validated_data['skills']
-                )
-                skill = Skill.objects.get_or_create(name=validated_data['skills'])
-                validated_data['skills'] = skill
-            else:
-                skills = []
-                for skill_data in skills_data:
-                    skill, created = Skill.objects.get_or_create(name=skill_data['name'])
-                    skills.append(skill)
-                validated_data['skills'] = skills
-        if not resume and not validated_data.get('skills'):
-            raise serializers.ValidationError("Skills or resume are required.")
+            for skill_data in skills_data:
+                skill_name = skill_data.get('name')
+                if skill_name:
+                    skill, _ = Skill.objects.get_or_create(name=skill_name)
+                    candidate.skills.add(skill)
+
+            # Save the candidate instance
+            candidate.save()
+
+            return candidate
+
+        except KeyError as ke:
+            raise serializers.ValidationError(f"Missing key: {str(ke)}")
+        except Exception as e:
+            raise serializers.ValidationError(f"Error processing candidate creation: {str(e)}")
+
 class AssessmentSerializer(serializers.ModelSerializer):
     candidate = CandidateSerializer(read_only=True)
     job_description = JobDescriptionSerializer(read_only=True)
