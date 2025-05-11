@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import authService from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -25,9 +26,8 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await authService.login(formData);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      navigate('/dashboard');
+      await login(formData);
+      navigate('/');
     } catch (err) {
       setError(err.error || 'An error occurred during login');
     } finally {
