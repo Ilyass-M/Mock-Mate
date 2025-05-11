@@ -34,7 +34,7 @@ const CVUpload = () => {
     setUploading(true);
 
     const formData = new FormData();
-    formData.append('cv', file);
+    formData.append('resume', file);
     formData.append('user_id', user.id);
 
     try {
@@ -46,6 +46,7 @@ const CVUpload = () => {
 
       if (!response.ok) {
         const error = await response.json();
+        console.error('Upload error:', error);
         throw new Error(error.message || 'Upload failed');
       }
 
@@ -53,6 +54,7 @@ const CVUpload = () => {
       toast.success('CV uploaded successfully!');
       setFile(null);
     } catch (err) {
+      console.error('Upload error:', err);
       toast.error(err.message || 'Failed to upload CV. Please try again.');
     } finally {
       setUploading(false);
