@@ -55,7 +55,7 @@ const Home = () => {
                     step: "1",
                     title: "Upload Your CV",
                     description:
-                      "Upload your CV. Our AI analyzes your experience and prepares questions tailored to your skills.",
+                      "Upload your CV. To register as a valid candidate to start practicing on our AI which analyzes your experiences and projects, and prepares questions tailored to your skills.",
                   },
                   {
                     step: "2",
@@ -71,11 +71,11 @@ const Home = () => {
                   },
                 ].map(({ step, title, description }) => (
                   <div key={step} className="flex items-start">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold">
+                    <div className="flex items-center px-4 justify-center w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold">
                       {step}
                     </div>
                     <div className="ml-4">
-                      <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
                       <p className="text-gray-600 mt-1 text-sm">{description}</p>
                     </div>
                   </div>

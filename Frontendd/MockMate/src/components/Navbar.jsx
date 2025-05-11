@@ -26,45 +26,23 @@ const Navbar = () => {
                 MockMate
               </Link>
             </div>
-            {user && (
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                <Link
-                  to="/"
-                  className="border-indigo-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >
-                  Home
-                </Link>
-                <Link
-                  to="/jobs"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >
-                  Jobs
-                </Link>
-                <Link
-                  to="/interviews"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >
-                  My Interviews
-                </Link>
-              </div>
-            )}
           </div>
 
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             {user ? (
               <div className="ml-3 relative">
                 <div>
-                  <button
+                  <div
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className="bg-white rounded-full flex text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    className="bg-white rounded-full flex text-sm focus:outline-none focus:ring-2 focus:ring-offset- focus:ring-indigo-500 hover:cursor-pointer"
                   >
                     <span className="sr-only">Open user menu</span>
-                    <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                    <div className="h-10 w-10 p-5 rounded-full bg-indigo-100 flex items-center justify-center">
                       <span className="text-indigo-600 font-medium">
                         {user?.username?.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                  </button>
+                  </div>
                 </div>
                 {isMenuOpen && (
                   <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">

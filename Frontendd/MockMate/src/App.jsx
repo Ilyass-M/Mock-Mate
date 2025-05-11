@@ -5,12 +5,14 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import { AuthProvider } from "./context/AuthContext";
+import { Toaster } from "sonner";
 import "./App.css";
 
 function App() {
   return (
     <AuthProvider>
       <Router>
+        <Toaster richColors position="top-center" />
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Home />} />
