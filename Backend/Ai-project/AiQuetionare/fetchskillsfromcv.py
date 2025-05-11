@@ -38,7 +38,8 @@ def cv_extract(data):
     Give the extracted information in json format only
     '''
     
-    client = genai.Client(api_key=os.getenv("GENAI_API_KEY"))
+    # client = genai.Client(api_key=os.getenv("GENAI_API_KEY"))
+    client = genai.Client(api_key= 'AIzaSyBTLRYmyB72eKXVBOmacHTKymsl7kuR1Xs')
     user_data = data
     
     response = client.models.generate_content(
