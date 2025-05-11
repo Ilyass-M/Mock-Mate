@@ -65,7 +65,5 @@ def parse_cv(path):
 def get_data_from_cv(path):
     data = read_cv(path)
     data = cv_extract(data)
-    # Write the data to a file
-    # with open('parsed_cv.txt', 'w') as f:
-    #     f.write(data)
+
     return data
