@@ -108,7 +108,7 @@ TechSpark Innovations is seeking a highly skilled and experienced Senior React A
 Interested candidates are invited to submit their resume and a cover letter highlighting their relevant experience to careers@techsparkinnovations.com with the subject line "Senior React App Engineer Application". Please also include a link to your GitHub profile or portfolio if available.
 """
 
-path = "Software Questions.csv"
+path = "./SoftwareQuestions.csv"
 
 try:
     questions_df = pd.read_csv(path, encoding='latin-1')
