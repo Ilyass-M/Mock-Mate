@@ -20,21 +20,9 @@ def read_cv(path):
 def cv_extract(data):
     prompt = '''
     You are an AI bot designed to act as a professional for parsing resumes. You are given with resume and your job is to extract the following information from the resume:
-    1. full name
-    2. email id
-    3. github portfolio
-    4. linkedin id
-    5. contact information (if any)
-    6. education details
-    7. employment details
-    8. project details (if any)
-    9. technical skills
-    10. soft skills
-    11. certifications/awards (if any)
-    11. any other information (if any)
-    12. location (if any)
-    13. summary (if any)
-    14. Combine all the Skills and Technologies into a single list
+    
+    1 all technical and softskills skills  with key technical_skills
+    2. cs topics that come under the skills with key cs_topics
     Give the extracted information in json format only
     '''
     
@@ -82,6 +70,7 @@ def get_data_from_cv(path):
         # Convert to Python dictionary
         json_data = json.loads(extracted_data)
         print("json_data", type(json_data))  # Should print <class 'dict'>
+        print("json_data", json_data)  # Debug the JSON data    
         return json_data
     except json.JSONDecodeError as e:
         print(f"Error converting to JSON: {e}")
