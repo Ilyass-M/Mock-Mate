@@ -9,3 +9,4 @@ websocket_urlpatterns = [
     # path('ws/typing/', TypingConsumer.as_asgi()),
     # path('ws/online-status/', OnlineStatusConsumer.as_asgi()),
 ]
+
