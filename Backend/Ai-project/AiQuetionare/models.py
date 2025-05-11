@@ -74,6 +74,7 @@ class JobDescription(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     skills = models.ManyToManyField(Skill, related_name='job_descriptions')
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='job_descriptions')
     
     def __str__(self):
         return self.title
@@ -120,14 +121,21 @@ class QuestionRelationship(models.Model):
     def __str__(self):
         return f"{self.from_question.question_number} -> {self.to_question.question_number}"
 
-
-class Candidate(models.Model):
+import uuid
+import os
+def unique_file_path(instance, filename):
+    # Extract the file extension
+    ext = filename.split('.')[-1]
+    # Generate a unique filename using UUID
+    filename = f"{uuid.uuid4().hex}.{ext}"
+    return os.path.join("resumes", filename)
+class Candidate(models.Model): 
     """Model for representing users taking assessments"""
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='candidate_profile')
     cv_match_score = models.FloatField(default=0.0)
     
     skills = models.ManyToManyField(Skill, related_name='candidates')
-    resume = models.FileField(upload_to='resumes/', null=True, blank=True)
+    resume = models.FileField(upload_to=unique_file_path, null=True, blank=True)
     websocket_session_id = models.CharField(max_length=100, null=True, blank=True)
     
     def __str__(self):

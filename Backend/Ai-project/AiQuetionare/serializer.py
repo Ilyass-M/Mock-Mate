@@ -73,13 +73,44 @@ class JobDescriptionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = JobDescription
-        fields = ['id', 'title', 'description', 'created_at', 'updated_at', 'skills']
-
+        fields = ['id', 'title', 'description', 'created_at', 'updated_at', 'skills', 'created_by']
+        extra_kwargs = {
+            'title': {'required': True},
+            'description': {'required': True},
+            'skills': {'required': True},
+            'created_by': {'required': True},
+        }
+    def validate(self, attrs):
+        title = attrs.get("title")
+        description = attrs.get("description")
+        if not title or not description:
+            raise serializers.ValidationError("Title and description are required fields.")
+        if len(title) < 5 or len(description) < 10:
+            raise serializers.ValidationError("Title must be at least 5 characters and description at least 10 characters long.")
+        return attrs
+    def update(self, instance, validated_data):
+        user = self.context['request'].user
+        if not user.is_recruiter:
+            raise serializers.ValidationError("Only recruiters can update job descriptions.")
+        jd_created_by = JobDescription.objects.filter(id=instance.id).values('created_by').get()
+        if jd_created_by['created_by'] != user.id:
+            raise serializers.ValidationError("You are not authorized to update this job description.")
+        return super().update(instance, validated_data)
+    
+    def delete(self, instance):
+        user = self.context['request'].user
+        if not user.is_recruiter:
+            raise serializers.ValidationError("Only recruiters can delete job descriptions.")
+        jd_created_by = JobDescription.objects.filter(id=instance.id).values('created_by').get()
+        if jd_created_by['created_by'] != user.id:
+            raise serializers.ValidationError("You are not authorized to delete this job description.")
+        return super().delete(instance)
     def create(self, validated_data):
         user = self.context['request'].user
         if not user.is_recruiter:
             raise serializers.ValidationError("Only recruiters can create job descriptions.")
-        
+
+        validated_data['created_by'] = user
         return super().create(validated_data)
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -109,63 +140,69 @@ class QuestionRelationshipSerializer(serializers.ModelSerializer):
 
 
 class CandidateSerializer(serializers.ModelSerializer):
-    user = CustomUserSerializer(read_only=True)
+    user = CustomUserSerializer(read_only=True, required=False)
     skills = SkillSerializer(many=True, required=False)
 
     class Meta:
         model = Candidate
         fields = ['id', 'user', 'cv_match_score', 'skills', 'resume', 'websocket_session_id']
         extra_kwargs = {
-            'cv': {'required': False},
+            'resume': {'required': True},
             'skills': {'required': False},
-            'user': {'required': True},
+            'user': {'required': False},
         }
     def create(self, validated_data):
-        # try:
-            # Extract the user ID
-        user_id = self.context['request'].data.get('user_id')
-        if not user_id:
-            raise serializers.ValidationError("User ID is required to create a candidate.")
-
-        # Fetch the user instance
         try:
-            a = 2
-            user = CustomUser.objects.get(id=user_id)
-        except CustomUser.DoesNotExist:
-            raise serializers.ValidationError("User with the given ID does not exist.")
+            # Extract the user ID
+            user_id = self.context['request'].data.get('user_id')
 
-        # Create the candidate instance
-        candidate = Candidate.objects.create(user=user, **validated_data)
+            resume = self.context['request'].data.get('resume') or self.context['request'].FILES.get('resume')
+            if not resume:
+                raise serializers.ValidationError("Resume is a required to create a candidate.")
+            if not user_id:
+                raise serializers.ValidationError("User ID is required to create a candidate.")
 
-        # Handle the resume file
-        resume = validated_data.pop('resume', None)
-        if resume:
-            print("Resume:", resume)
-            extracted_skills = get_data_from_cv(resume)
-            # skills_data = json.loads(extracted_skills)
-            # print("skills_data", extracted_skills)
-            for skill_name in extracted_skills.get("technical_skills", []):
-                print(skill_name)
-                # print("Extracted Skill:", skill_name)
-                skill, _ = Skill.objects.get_or_create(name=skill_name)
-                candidate.skills.add(skill)
-        # Add explicitly provided skills
-        skills_data = validated_data.pop('skills', [])
-        for skill_data in skills_data:
-            skill_name = skill_data.get('name')
-            if skill_name:
-                skill, _ = Skill.objects.get_or_create(name=skill_name)
-                candidate.skills.add(skill)
+            # Fetch the user instance
+            try:
+                
+                user = CustomUser.objects.get(id=user_id)
+            except CustomUser.DoesNotExist:
+                raise serializers.ValidationError("User with the given ID does not exist.")
 
-        # Save the candidate instance
-        candidate.save()
+            # Create the candidate instance
+           
 
-        return candidate
+            # Handle the resume file
+            resume = validated_data.pop('resume', None)
+            if resume:
+                print("Resume:", resume)
+                extracted_skills = get_data_from_cv(resume)
+                # skills_data = json.loads(extracted_skills)
+                # print("skills_data", extracted_skills)
+                if extracted_skills is not None:
+                    candidate = Candidate.objects.create(user=user, **validated_data)
+                for skill_name in extracted_skills.get("technical_skills", []):
+                    print(skill_name)
+                    # print("Extracted Skill:", skill_name)
+                    skill, _ = Skill.objects.get_or_create(name=skill_name)
+                    candidate.skills.add(skill)
+            # Add explicitly provided skills
+            skills_data = validated_data.pop('skills', [])
+            for skill_data in skills_data:
+                skill_name = skill_data.get('name')
+                if skill_name:
+                    skill, _ = Skill.objects.get_or_create(name=skill_name)
+                    candidate.skills.add(skill)
 
-        # except KeyError as ke:
-        #     raise serializers.ValidationError(f"Missing key: {str(ke)}")
-        # except Exception as e:
-        #     raise serializers.ValidationError(f"Error processing candidate creation: {str(e)}")
+            # Save the candidate instance
+            candidate.save()
+
+            return candidate
+
+        except KeyError as ke:
+            raise serializers.ValidationError(f"Missing key: {str(ke)}")
+        except Exception as e:
+            raise serializers.ValidationError(f"Error processing candidate creation: {str(e)}")
 
 class AssessmentSerializer(serializers.ModelSerializer):
     candidate = CandidateSerializer(read_only=True)

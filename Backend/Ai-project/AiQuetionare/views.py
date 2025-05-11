@@ -278,17 +278,33 @@ class JobDescriptionView(APIView):
             raise CustomError(message, code=code, details=details, status_code=status_code)
     def put(self, request):
         try:
-            job_description_param = request.query_params.get('job_description_id')
-            job_description = JobDescription.objects.filter(user=user.data['id']).first()
+            # Extracting query parameters
+            job_id = request.query_params.get('id')
+            
+
+            # Check if job_id is provided
+            if not job_id:
+                raise CustomError("Job ID is required", code="MISSING_JOB_ID", status_code=status.HTTP_400_BAD_REQUEST)
+
+            # Fetch the job description for the provided user and job ID
+            user = CustomUserReadSerializer(request.user)
+            user_id = user.data['id']
+            job_description = JobDescription.objects.filter(id=job_id, created_by_id=user_id).first()
             if not job_description:
                 raise CustomError("Job Description not found", code="JOB_DESCRIPTION_NOT_FOUND", status_code=status.HTTP_404_NOT_FOUND)
-            job_description_serz = JobDescriptionSerializer(job_description, data=request.data, partial=True)
+
+            # Partial update using the serializer
+            job_description_serz = JobDescriptionSerializer(job_description, data=request.data, partial=True, context={'request': request})
             if job_description_serz.is_valid():
                 job_description_serz.save()
                 return Response(job_description_serz.data, status=status.HTTP_200_OK)
+
+            # Raise error if the serializer is not valid
             raise CustomError("Invalid data", code="JOB_DESCRIPTION_UPDATE_ERROR", details=job_description_serz.errors, status_code=status.HTTP_400_BAD_REQUEST)
+
         except ValidationError as ve:
             raise CustomError("Validation error", code="JOB_DESCRIPTION_UPDATE_ERROR", details=ve.detail, status_code=status.HTTP_400_BAD_REQUEST)
+
         except Exception as e:
             details = getattr(e, 'details', {"error": str(e)})
             code = getattr(e, 'code', "UNKNOWN_ERROR")
