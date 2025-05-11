@@ -42,19 +42,20 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'AiQuetionare',
+    'rest_framework',
 ]
 ASGI_APPLICATION = "mockmate.asgi.application"
 
 # ALLOWED_HOSTS = ['*']
 # CORS_ALLOW_ALL_ORIGINS = True
 
-ALLOWED_HOSTS = ['localhost']
-CORS_ALLOW_ALL_ORIGINS = False  # ❌ remove this
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # ✅ Frontend origin
-]
+# ALLOWED_HOSTS = ['localhost']
+# CORS_ALLOW_ALL_ORIGINS = False  # ❌ remove this
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:5173",  # ✅ Frontend origin
+# ]
 
-CORS_ALLOW_CREDENTIALS = True  # ✅ Required for cookies/auth headers
+# CORS_ALLOW_CREDENTIALS = True  # ✅ Required for cookies/auth headers
 
 
 MIDDLEWARE = [
@@ -138,6 +139,15 @@ REST_FRAMEWORK = {
     ),
     'EXCEPTION_HANDLER': 'AiQuetionare.exception.custom_exception_handler',
 }
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',  # For dev only
+        # For production, use Redis:
+        # 'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        # 'CONFIG': {"hosts": [('127.0.0.1', 6379)]},
+    },
+}
+
 
 from datetime import timedelta
 

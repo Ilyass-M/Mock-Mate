@@ -21,7 +21,7 @@ class JWTAuthMiddleware(BaseMiddleware):
             try:
                 payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
                 user_id = payload.get("user_id")
-
+                # print(f"Decoded user_id: {user_id}")
                 @database_sync_to_async
                 def get_user():
                     try:
