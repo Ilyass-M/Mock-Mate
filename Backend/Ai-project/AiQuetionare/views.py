@@ -153,12 +153,12 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         except ValidationError as ve:
             code = getattr(ve, 'code', "VALIDATION_ERROR")
             message = getattr(ve, 'message', "Validation error")
-            details = getattr(ve, 'details', {"error": str(ve)})
+            details = getattr(ve, 'detail', {"error": str(ve)})
             status_code = getattr(ve, 'status_code', status.HTTP_400_BAD_REQUEST)
 
             raise CustomError(message, code=code, details=details, status_code=status_code)
         except Exception as e:
-            details = getattr(e, 'details', {"error": str(e)})
+            details = getattr(e, 'detail', {"error": str(e)})
             code = getattr(e, 'code', "UNKNOWN_ERROR")
             message = getattr(e, 'message', "Failed to process login request")
             status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
@@ -167,25 +167,24 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 
 class LogoutView(APIView):
-    authentication_classes = [JWTAuthentication]
+    
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         try:
-            refresh_token = request.data.get('refresh_token')
-            if not refresh_token:
-                raise CustomError("Refresh token is required", code="MISSING_REFRESH_TOKEN")
 
-            try:
-                token = RefreshToken(refresh_token)
-                token.blacklist()
-            except TokenError:
-                raise CustomError("Invalid refresh token", code="INVALID_REFRESH_TOKEN")
-
-            response = Response({"message": "Logged out successfully"}, status=status.HTTP_205_RESET_CONTENT)
+            logout(request)
+            response = Response({'message': 'Logged out successfully.'}, status=status.HTTP_200_OK)
             response.delete_cookie('access_token')
             response.delete_cookie('refresh_token')
             return response
 
         except Exception as e:
-            raise CustomError("Failed to process logout request", code="LOGOUT_ERROR", details={"error": e})
+            details = getattr(e, 'details', {"error": str(e)})
+            code = getattr(e, 'code', "LOGOUT_ERROR")
+            message = getattr(e, 'message', "Failed to process logout request")
+            status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
+            raise CustomError(message, code=code, details=details, status_code=status_code)
+            
+
+
