@@ -78,7 +78,7 @@ const JobList = () => {
         {jobs.map((job) => (
           <div
             key={job.id}
-            className="bg-white overflow-hidden shadow rounded-lg divide-y divide-gray-200"
+            className="bg-white overflow-hidden divide-y divide-gray-200 border-2 border-gray-200 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
           >
             <div className="px-4 py-5 sm:px-6">
               <h3 className="text-lg font-medium text-gray-900">{job.title}</h3>
