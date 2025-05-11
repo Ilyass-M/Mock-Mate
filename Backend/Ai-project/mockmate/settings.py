@@ -85,7 +85,7 @@ DATABASES = {
         'PORT': env('DATABASE_PORT'),
     }
 }
-# AUTH_USER_MODEL = 'AiQuetionare.CustomUser'
+AUTH_USER_MODEL = 'AiQuetionare.CustomUser'
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -116,10 +116,14 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'AiQuetionare.authenticate.JWTAuthFromCookie',
+    ),
+    'EXCEPTION_HANDLER': 'AiQuetionare.exception.custom_exception_handler',
+}
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
 
