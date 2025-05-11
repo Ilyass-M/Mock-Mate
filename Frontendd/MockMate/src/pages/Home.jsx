@@ -2,9 +2,10 @@ import React from "react";
 import CVUpload from "../components/CVUpload";
 import JobList from "../components/JobList";
 import { ArrowRight, CheckCircle, FileText, Briefcase, MessageSquare } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const Home = () => {
-  const user = JSON.parse(localStorage.getItem("user"));
+  const { user } = useAuth();
 
   return (
     <div className="container mx-auto">
@@ -126,16 +127,13 @@ const Home = () => {
               title: "Track Growth",
               description: "Monitor progress and watch your confidence rise with every mock session.",
             },
-          ].map(({ icon: Icon, title, description }) => (
-            <div
-              key={title}
-              className="bg-white p-6 rounded-2xl shadow-md text-left border hover:shadow-xl transition"
-            >
-              <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
-                <Icon className="text-indigo-600 w-6 h-6" />
+          ].map((feature, index) => (
+            <div key={index} className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300">
+              <div className="h-12 w-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-6">
+                <feature.icon className="h-6 w-6 text-indigo-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800">{title}</h3>
-              <p className="text-gray-600 mt-2 text-sm">{description}</p>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{feature.title}</h3>
+              <p className="text-gray-600">{feature.description}</p>
             </div>
           ))}
         </div>

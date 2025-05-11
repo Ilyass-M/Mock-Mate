@@ -44,8 +44,13 @@ INSTALLED_APPS = [
 ]
 
 
-ALLOWED_HOSTS = ['*']
-CORS_ALLOW_ALL_ORIGINS = True
+ALLOWED_HOSTS = ['localhost']
+CORS_ALLOW_ALL_ORIGINS = False  # ❌ remove this
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # ✅ Frontend origin
+]
+
+CORS_ALLOW_CREDENTIALS = True  # ✅ Required for cookies/auth headers
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
