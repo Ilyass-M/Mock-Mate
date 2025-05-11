@@ -30,7 +30,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     fullname = models.CharField(max_length=300, unique=False, default='')
     phone_number = models.CharField(max_length=15, unique=True, null=True, blank=True)
     profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
-    cv = models.FileField(upload_to='cv/', null=True, blank=True)
+    # cv = models.FileField(upload_to='cv/', null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_recruiter = models.BooleanField(default=False)
@@ -125,6 +125,7 @@ class Candidate(models.Model):
     """Model for representing users taking assessments"""
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='candidate_profile')
     cv_match_score = models.FloatField(default=0.0)
+    cv = models.FileField(upload_to='cv/', null=True, blank=True)
     skills = models.ManyToManyField(Skill, related_name='candidates')
     resume = models.FileField(upload_to='resumes/', null=True, blank=True)
     websocket_session_id = models.CharField(max_length=100, null=True, blank=True)

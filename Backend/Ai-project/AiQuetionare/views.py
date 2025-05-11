@@ -6,7 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
-from AiQuetionare.serializer import EmailTokenObtainPairSerializer, CustomUserSerializer
+from AiQuetionare.serializer import EmailTokenObtainPairSerializer, CustomUserSerializer, CustomUserReadSerializer
 from AiQuetionare.Error import CustomError
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
@@ -24,7 +24,9 @@ class UserView(APIView):
             if not request.user.is_authenticated:
                 raise CustomError("User not authenticated", code="USER_NOT_AUTHENTICATED", status_code=status.HTTP_401_UNAUTHORIZED)
             user = request.user
-            serializer = CustomUserSerializer(user)
+            user.password = None  # Ensure password is not included in the response
+
+            serializer = CustomUserReadSerializer(user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             details = getattr(e, 'details', {"error": str(e)})
@@ -65,8 +67,10 @@ class UserView(APIView):
                 serializer = CustomUserSerializer(data=request.data)
                
                 if serializer.is_valid():
-                    serializer.save()
-                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                    user = serializer.save()
+                    read_serializer = CustomUserReadSerializer(user)
+                    
+                    return Response(read_serializer.data, status=status.HTTP_201_CREATED)
                 print(serializer.errors)
                 raise CustomError("Invalid data", code="USER_CREATION_ERROR", details=serializer.errors, status_code=status.HTTP_400_BAD_REQUEST)
             except ValidationError as ve:

@@ -10,9 +10,10 @@ class CustomUserSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = [
             'id', 'email', 'username', 'fullname', 'phone_number', 'profile_picture', 
-            'cv', 'is_active', 'is_staff', 'is_recruiter', 'is_candidate', 'date_joined'
+             'is_active', 'is_staff', 'is_recruiter', 'is_candidate', 'date_joined', 'password'
         ]
         read_only_fields = ['is_staff', 'is_active', 'is_superuser', 'date_joined']
+        write_only_fields = ['password']
         extra_kwargs = {
             'email': {'required': True},
             'username': {'required': True},
@@ -20,8 +21,18 @@ class CustomUserSerializer(serializers.ModelSerializer):
             'phone_number': {'required': True},
             'is_recruiter': {'required': True},
             'is_candidate': {'required': True},
+            'password': {'required': True},
         }
-    
+    def create(self, validated_data):
+        # Pop the password from the validated data
+        password = validated_data.pop('password')
+        # Create the user instance without saving it to the database
+        user = CustomUser(**validated_data)
+        # Set the password using set_password to hash it
+        user.set_password(password)
+        # Save the user instance to the database
+        user.save()
+        return user
     def validate(self, attrs):
         is_recruiter = attrs.get("is_recruiter")
         is_candidate = attrs.get("is_candidate")
@@ -40,6 +51,14 @@ class CustomUserSerializer(serializers.ModelSerializer):
             ])
 
         return attrs
+    
+class CustomUserReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = [
+            'id', 'email', 'username', 'fullname', 'phone_number', 'profile_picture', 
+            'is_active', 'is_staff', 'is_recruiter', 'is_candidate', 'date_joined'
+        ]
 
 class SkillSerializer(serializers.ModelSerializer):
     class Meta:
@@ -87,7 +106,7 @@ class CandidateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Candidate
-        fields = ['id', 'user', 'cv_match_score', 'skills', 'resume', 'websocket_session_id']
+        fields = ['id', 'cv','user', 'cv_match_score', 'skills', 'resume', 'websocket_session_id']
 
 
 class AssessmentSerializer(serializers.ModelSerializer):
@@ -151,7 +170,6 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
             'fullname': user.fullname,
             'phone_number': user.phone_number,
             'profile_picture': str(user.profile_picture),
-            'cv': str(user.cv),
             'is_active': user.is_active,
             'is_staff': user.is_staff,
             'is_recruiter': user.is_recruiter,
