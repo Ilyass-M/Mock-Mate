@@ -135,8 +135,10 @@ class CandidateSerializer(serializers.ModelSerializer):
                 print("Resume:", resume)
                 extracted_skills = get_data_from_cv(resume)
                 for skill_name in extracted_skills:
-                    skill, _ = Skill.objects.get_or_create(name=skill_name)
-                    candidate.skills.add(skill)
+                    a = 1
+                    # print("Extracted Skill:", skill_name)
+                    # skill, _ = Skill.objects.get_or_create(name=skill_name)
+                    # candidate.skills.add(skill)
 
             # Add explicitly provided skills
             skills_data = validated_data.pop('skills', [])

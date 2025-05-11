@@ -50,7 +50,7 @@ def cv_extract(data):
             max_output_tokens=1500,
             temperature=0.0
         ))
-    
+    print(response)
     return response.text
     
 
@@ -66,5 +66,5 @@ def parse_cv(path):
 def get_data_from_cv(path):
     data = read_cv(path)
     data = cv_extract(data)
-
+    print(data)
     return data
