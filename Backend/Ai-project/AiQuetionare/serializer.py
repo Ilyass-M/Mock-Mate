@@ -169,24 +169,17 @@ class CandidateSerializer(serializers.ModelSerializer):
             except CustomUser.DoesNotExist:
                 raise serializers.ValidationError("User with the given ID does not exist.")
 
-            # Create the candidate instance
-           
-
-            # Handle the resume file
             resume = validated_data.pop('resume', None)
             if resume:
                 print("Resume:", resume)
                 extracted_skills = get_data_from_cv(resume)
-                # skills_data = json.loads(extracted_skills)
-                # print("skills_data", extracted_skills)
+               
                 if extracted_skills is not None:
                     candidate = Candidate.objects.create(user=user, **validated_data)
                 for skill_name in extracted_skills.get("technical_skills", []):
                     print(skill_name)
-                    # print("Extracted Skill:", skill_name)
                     skill, _ = Skill.objects.get_or_create(name=skill_name)
                     candidate.skills.add(skill)
-            # Add explicitly provided skills
             skills_data = validated_data.pop('skills', [])
             for skill_data in skills_data:
                 skill_name = skill_data.get('name')
