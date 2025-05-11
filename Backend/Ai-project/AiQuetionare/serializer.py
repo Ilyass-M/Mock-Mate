@@ -4,6 +4,7 @@ from .models import Skill, JobDescription, Category, Question, QuestionRelations
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import authenticate
 from AiQuetionare.fetchskillsfromcv import get_data_from_cv
+import json
 CustomUser = get_user_model()
 
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -114,49 +115,51 @@ class CandidateSerializer(serializers.ModelSerializer):
             'user': {'required': True},
         }
     def create(self, validated_data):
-        try:
+        # try:
             # Extract the user ID
-            user_id = self.context['request'].data.get('user_id')
-            if not user_id:
-                raise serializers.ValidationError("User ID is required to create a candidate.")
+        user_id = self.context['request'].data.get('user_id')
+        if not user_id:
+            raise serializers.ValidationError("User ID is required to create a candidate.")
 
-            # Fetch the user instance
-            try:
-                user = CustomUser.objects.get(id=user_id)
-            except CustomUser.DoesNotExist:
-                raise serializers.ValidationError("User with the given ID does not exist.")
+        # Fetch the user instance
+        try:
+            a = 2
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            raise serializers.ValidationError("User with the given ID does not exist.")
 
-            # Create the candidate instance
-            candidate = Candidate.objects.create(user=user, **validated_data)
+        # Create the candidate instance
+        candidate = Candidate.objects.create(user=user, **validated_data)
 
-            # Handle the resume file
-            resume = validated_data.pop('resume', None)
-            if resume:
-                print("Resume:", resume)
-                extracted_skills = get_data_from_cv(resume)
-                for skill_name in extracted_skills:
-                    a = 1
-                    # print("Extracted Skill:", skill_name)
-                    # skill, _ = Skill.objects.get_or_create(name=skill_name)
-                    # candidate.skills.add(skill)
+        # Handle the resume file
+        resume = validated_data.pop('resume', None)
+        if resume:
+            print("Resume:", resume)
+            extracted_skills = get_data_from_cv(resume)
+            # skills_data = json.loads(extracted_skills)
+            # print("skills_data", extracted_skills)
+            for skill_name in extracted_skills.get("technical_skills", []):
+                print(skill_name)
+                # print("Extracted Skill:", skill_name)
+                skill, _ = Skill.objects.get_or_create(name=skill_name)
+                candidate.skills.add(skill)
+        # Add explicitly provided skills
+        skills_data = validated_data.pop('skills', [])
+        for skill_data in skills_data:
+            skill_name = skill_data.get('name')
+            if skill_name:
+                skill, _ = Skill.objects.get_or_create(name=skill_name)
+                candidate.skills.add(skill)
 
-            # Add explicitly provided skills
-            skills_data = validated_data.pop('skills', [])
-            for skill_data in skills_data:
-                skill_name = skill_data.get('name')
-                if skill_name:
-                    skill, _ = Skill.objects.get_or_create(name=skill_name)
-                    candidate.skills.add(skill)
+        # Save the candidate instance
+        candidate.save()
 
-            # Save the candidate instance
-            candidate.save()
+        return candidate
 
-            return candidate
-
-        except KeyError as ke:
-            raise serializers.ValidationError(f"Missing key: {str(ke)}")
-        except Exception as e:
-            raise serializers.ValidationError(f"Error processing candidate creation: {str(e)}")
+        # except KeyError as ke:
+        #     raise serializers.ValidationError(f"Missing key: {str(ke)}")
+        # except Exception as e:
+        #     raise serializers.ValidationError(f"Error processing candidate creation: {str(e)}")
 
 class AssessmentSerializer(serializers.ModelSerializer):
     candidate = CandidateSerializer(read_only=True)

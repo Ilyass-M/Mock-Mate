@@ -50,7 +50,7 @@ def cv_extract(data):
             max_output_tokens=1500,
             temperature=0.0
         ))
-    print(response)
+    # print(response.text)
     return response.text
     
 
@@ -63,8 +63,27 @@ def parse_cv(path):
     return data
 
 
+# import json
+
 def get_data_from_cv(path):
     data = read_cv(path)
-    data = cv_extract(data)
-    print(data)
-    return data
+    extracted_data = cv_extract(data)
+    
+    # Remove surrounding code block markers if present
+    if extracted_data.startswith("```json") and extracted_data.endswith("```"):
+        extracted_data = extracted_data[7:-3].strip()
+
+    # Check if the extracted data is empty
+    if not extracted_data:
+        print(f"Error: Extracted data is empty for the file: {path}")
+        return None
+    
+    try:
+        # Convert to Python dictionary
+        json_data = json.loads(extracted_data)
+        print("json_data", type(json_data))  # Should print <class 'dict'>
+        return json_data
+    except json.JSONDecodeError as e:
+        print(f"Error converting to JSON: {e}")
+        print("Extracted data:", extracted_data)  # Debug the extracted data
+        return None

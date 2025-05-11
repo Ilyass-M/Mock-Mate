@@ -33,7 +33,6 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Application definition
-CORS_ALLOW_ALL_ORIGINS = True
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -44,9 +43,14 @@ INSTALLED_APPS = [
     'AiQuetionare',
 ]
 
+
+ALLOWED_HOSTS = ['*']
+CORS_ALLOW_ALL_ORIGINS = True
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
