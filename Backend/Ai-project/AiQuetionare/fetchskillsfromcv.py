@@ -86,4 +86,3 @@ def get_data_from_cv(path):
     except json.JSONDecodeError as e:
         print(f"Error converting to JSON: {e}")
         print("Extracted data:", extracted_data)  # Debug the extracted data
-        return None
