@@ -6,12 +6,13 @@ from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
-from AiQuetionare.serializer import EmailTokenObtainPairSerializer, CustomUserSerializer, CustomUserReadSerializer
+from AiQuetionare.serializer import EmailTokenObtainPairSerializer, CustomUserSerializer, CustomUserReadSerializer, CandidateSerializer
 from AiQuetionare.Error import CustomError
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
+from AiQuetionare.models import Candidate
 
 
 User = get_user_model()
@@ -186,5 +187,71 @@ class LogoutView(APIView):
             status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
             raise CustomError(message, code=code, details=details, status_code=status_code)
             
-
-
+class candidateView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        try:
+            user = CustomUserReadSerializer(request.user)
+            
+            candidate = Candidate.objects.filter(user=user.data['id']).first()
+            if not candidate:
+                raise CustomError("Candidate not found", code="CANDIDATE_NOT_FOUND", status_code=status.HTTP_404_NOT_FOUND)
+            candidate_serz = CandidateSerializer(candidate)
+            return Response(candidate_serz.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            details = getattr(e, 'details', {"error": str(e)})
+            code = getattr(e, 'code', "USER_RETRIEVAL_ERROR")
+            message = getattr(e, 'message', "Failed to retrieve user data")
+            status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
+            raise CustomError(message, code=code, details=details, status_code=status_code)
+        
+    def put(self, request):
+        try:
+            user = CustomUserReadSerializer(request.user)
+            candidate = Candidate.objects.filter(user=user.data['id']).first()
+            if not candidate:
+                raise CustomError("Candidate not found", code="CANDIDATE_NOT_FOUND", status_code=status.HTTP_404_NOT_FOUND)
+            candidate_serz = CandidateSerializer(candidate, data=request.data, partial=True)
+            if candidate_serz.is_valid():
+                candidate_serz.save()
+                return Response(candidate_serz.data, status=status.HTTP_200_OK)
+            raise CustomError("Invalid data", code="CANDIDATE_UPDATE_ERROR", details=candidate_serz.errors, status_code=status.HTTP_400_BAD_REQUEST)
+        except ValidationError as ve:
+            raise CustomError("Validation error", code="CANDIDATE_UPDATE_ERROR", details=ve.detail, status_code=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            details = getattr(e, 'details', {"error": str(e)})
+            code = getattr(e, 'code', "UNKNOWN_ERROR")
+            message = getattr(e, 'message', "Failed to update user data")
+            status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
+            raise CustomError(message, code=code, details=details, status_code=status_code)
+    def delete(self, request):
+        try:
+            user = CustomUserReadSerializer(request.user)
+            candidate = Candidate.objects.filter(user=user.data['id']).first()
+            if not candidate:
+                raise CustomError("Candidate not found", code="CANDIDATE_NOT_FOUND", status_code=status.HTTP_404_NOT_FOUND)
+            candidate.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            details = getattr(e, 'details', {"error": str(e)})
+            code = getattr(e, 'code', "CANDIDATE_DELETE_ERROR")
+            message = getattr(e, 'message', "Failed to delete user")
+            status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
+            raise CustomError(message, code=code, details=details, status_code=status_code)
+    def post(self, request):
+        try:
+            serializer = CandidateSerializer(data=request.data)
+            if serializer.is_valid():
+                candidate = serializer.save()
+                read_serializer = CandidateSerializer(candidate)
+                return Response(read_serializer.data, status=status.HTTP_201_CREATED)
+            raise CustomError("Invalid data", code="CANDIDATE_CREATION_ERROR", details=serializer.errors, status_code=status.HTTP_400_BAD_REQUEST)
+        except ValidationError as ve:
+            raise CustomError("Validation error", code="CANDIDATE_VALIDATION_ERROR", details=ve.detail, status_code=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            details = getattr(e, 'details', {"error": str(e)})
+            code = getattr(e, 'code', "UNKNOWN_ERROR")
+            message = getattr(e, 'message', "Failed to process request")
+            status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
+            raise CustomError(message, code=code, details=details, status_code=status_code)

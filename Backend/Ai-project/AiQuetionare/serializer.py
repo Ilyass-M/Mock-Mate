@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from .models import Skill, JobDescription, Category, Question, QuestionRelationship, Candidate, Assessment, CandidateAnswer, MLModel
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import authenticate
+from AiQuetionare.fetchskillsfromcv import get_data_from_cv
 CustomUser = get_user_model()
 
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -102,13 +103,35 @@ class QuestionRelationshipSerializer(serializers.ModelSerializer):
 
 class CandidateSerializer(serializers.ModelSerializer):
     user = CustomUserSerializer(read_only=True)
-    skills = SkillSerializer(many=True, read_only=True)
+    skills = SkillSerializer(many=True, required=False)
 
     class Meta:
         model = Candidate
-        fields = ['id', 'cv','user', 'cv_match_score', 'skills', 'resume', 'websocket_session_id']
-
-
+        fields = ['id', 'user', 'cv_match_score', 'skills', 'resume', 'websocket_session_id']
+        extra_kwargs = {
+            'cv': {'required': False},
+            'skills': {'required': False},
+        }
+    def create(self, validated_data):
+        resume = validated_data.pop('resume', None)
+        if resume:
+            validated_data['resume'] = resume
+            skills_data = validated_data.pop('skills', [])
+            if skills_data.len() == 0:
+                get_data_from_cv(resume)
+                Skill.objects.create(
+                    name=validated_data['skills']
+                )
+                skill = Skill.objects.get_or_create(name=validated_data['skills'])
+                validated_data['skills'] = skill
+            else:
+                skills = []
+                for skill_data in skills_data:
+                    skill, created = Skill.objects.get_or_create(name=skill_data['name'])
+                    skills.append(skill)
+                validated_data['skills'] = skills
+        if not resume and not validated_data.get('skills'):
+            raise serializers.ValidationError("Skills or resume are required.")
 class AssessmentSerializer(serializers.ModelSerializer):
     candidate = CandidateSerializer(read_only=True)
     job_description = JobDescriptionSerializer(read_only=True)

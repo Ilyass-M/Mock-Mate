@@ -125,7 +125,7 @@ class Candidate(models.Model):
     """Model for representing users taking assessments"""
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='candidate_profile')
     cv_match_score = models.FloatField(default=0.0)
-    cv = models.FileField(upload_to='cv/', null=True, blank=True)
+    
     skills = models.ManyToManyField(Skill, related_name='candidates')
     resume = models.FileField(upload_to='resumes/', null=True, blank=True)
     websocket_session_id = models.CharField(max_length=100, null=True, blank=True)
