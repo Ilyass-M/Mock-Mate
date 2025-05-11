@@ -1,3 +1,4 @@
+import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,18 +14,16 @@ const JobList = () => {
 
   const fetchJobs = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/jobs/', {
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
+      const response = await axios.get('http://localhost:8000/api/JobDescription/', {withCredentials: true});
+      if (!response) {
+        console.error(response);
         throw new Error('Failed to fetch jobs');
       }
-
-      const data = await response.json();
-      setJobs(data);
+      console.log(response.data);
+      setJobs([...response.data]);
     } catch (err) {
       setError('Failed to load jobs. Please try again later.');
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -69,10 +68,10 @@ const JobList = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="text-center mb-12">
-        <h2 className="text-3xl font-bold text-gray-900">Available Jobs</h2>
+        {/* <h2 className="text-3xl font-bold text-gray-900">Available Jobs</h2>
         <p className="mt-2 text-sm text-gray-600">
           Select a job to start your AI-powered interview preparation
-        </p>
+        </p> */}
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -83,26 +82,22 @@ const JobList = () => {
           >
             <div className="px-4 py-5 sm:px-6">
               <h3 className="text-lg font-medium text-gray-900">{job.title}</h3>
-              <p className="mt-1 text-sm text-gray-500">{job.company}</p>
+              {/* <p className="mt-1 text-sm text-gray-500">{job?.company}</p> */}
             </div>
             <div className="px-4 py-5 sm:p-6">
               <div className="space-y-4">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-900">Location</h4>
-                  <p className="mt-1 text-sm text-gray-500">{job.location}</p>
-                </div>
-                <div>
                   <h4 className="text-sm font-medium text-gray-900">Requirements</h4>
                   <ul className="mt-1 text-sm text-gray-500 list-disc list-inside">
-                    {job.requirements.map((req, index) => (
-                      <li key={index}>{req}</li>
+                    {job.skills.map((req, index) => (
+                      <li key={index}>{req.name}</li>
                     ))}
                   </ul>
                 </div>
                 <div>
                   <h4 className="text-sm font-medium text-gray-900">Description</h4>
                   <p className="mt-1 text-sm text-gray-500 line-clamp-3">
-                    {job.description}
+                    {job.description.replace(/\\r\\n/g, ' ')} {/* Replace \r\n with a space */}
                   </p>
                 </div>
               </div>

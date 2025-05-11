@@ -138,6 +138,13 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'AiQuetionare.exception.custom_exception_handler',
 }
 
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),  # Adjust as needed
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+}
+
 
 
 STATIC_URL = 'static/'
