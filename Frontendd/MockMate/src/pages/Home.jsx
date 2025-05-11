@@ -35,12 +35,12 @@ const Home = () => {
         <section id="upload" className="py-16 px-6 sm:px-10 md:px-20">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-6xl mx-auto">
             <div className="bg-white p-8 rounded-3xl shadow-lg transition hover:shadow-2xl">
-              <div className="flex items-center justify-between mb-6">
+              {/* <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Upload Your CV</h2>
                 <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
                   <FileText className="w-6 h-6 text-blue-600" />
                 </div>
-              </div>
+              </div> */}
               <CVUpload />
             </div>
 

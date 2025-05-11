@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
+import { FileText } from 'lucide-react';
 
 const CVUpload = () => {
   const [file, setFile] = useState(null);
@@ -68,8 +69,13 @@ const CVUpload = () => {
 
   return (
     <div className="max-w-xl mx-auto p-6">
-      <div className="text-center mb-8">
+      <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Upload Your CV</h2>
+        <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
+          <FileText className="w-6 h-6 text-blue-600" />
+        </div>
+      </div>
+      <div className="text-center mb-8">
         <p className="mt-2 text-sm text-gray-600">
           Upload your CV to get started with job matching and interview preparation
         </p>
@@ -188,6 +194,14 @@ const CVUpload = () => {
               <li key={skill.id}>{skill.name}</li>
             ))}
           </ul>
+          <div className="mt-6">
+            <button
+              onClick={() => setSkills([])} // Reset skills to show the upload menu again
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Upload a New CV
+            </button>
+          </div>
         </div>
       )}
     </div>
