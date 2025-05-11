@@ -13,6 +13,7 @@ from django.db.models import Count
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from AiQuetionare.models import Candidate, JobDescription
+from django.contrib.auth.models import Group
 
 
 User = get_user_model()
@@ -74,9 +75,13 @@ class UserView(APIView):
             try:
                 # Create a new user
                 serializer = CustomUserSerializer(data=request.data)
-               
+
                 if serializer.is_valid():
                     user = serializer.save()
+                    if user.is_recruiter:
+                        user.groups.add(Group.objects.get(name="recruiter"))
+                        user.is_staff = True
+                        user.save()
                     read_serializer = CustomUserReadSerializer(user)
                     
                     return Response(read_serializer.data, status=status.HTTP_201_CREATED)
