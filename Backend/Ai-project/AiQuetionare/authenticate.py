@@ -1,9 +1,11 @@
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.exceptions import AuthenticationFailed
 
 class JWTAuthFromCookie(JWTAuthentication):
     def authenticate(self, request):
-        # Try to get token from cookie
+        # Get the access token from cookies
         raw_token = request.COOKIES.get("access_token")
         print("Raw token from cookie:", raw_token)
 
@@ -21,4 +23,19 @@ class JWTAuthFromCookie(JWTAuthentication):
             return self.get_user(validated_token), validated_token
         except (InvalidToken, TokenError) as e:
             print("Invalid or expired token:", str(e))
-            return None
+
+            # Attempt to refresh the token if expired
+            refresh_token = request.COOKIES.get("refresh_token")
+            if not refresh_token:
+                print("No refresh token found in cookies.")
+                raise AuthenticationFailed("Authentication credentials were not provided.")
+
+            try:
+                # Generate a new access token
+                new_access_token = RefreshToken(refresh_token).access_token
+                return self.get_user(new_access_token), new_access_token
+            except TokenError as refresh_error:
+                print("Failed to refresh token:", str(refresh_error))
+                raise AuthenticationFailed("Invalid refresh token.")
+
+        return None
