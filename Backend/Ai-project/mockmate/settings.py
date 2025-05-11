@@ -57,7 +57,7 @@ ASGI_APPLICATION = "mockmate.asgi.application"
 
 # CORS_ALLOW_CREDENTIALS = True  # ✅ Required for cookies/auth headers
 
-GEMINI_API_KEY = env('GEMINI_API_KEY')
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
