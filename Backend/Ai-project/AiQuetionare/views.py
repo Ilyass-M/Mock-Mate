@@ -258,16 +258,17 @@ class candidateView(APIView):
             status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
             raise CustomError(message, code=code, details=details, status_code=status_code)
         
-class JobDescription(APIView):
+class JobDescriptionView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
         try:
-            user = CustomUserReadSerializer(request.user)
-            job_description = JobDescription.objects.filter(user=user.data['id']).first()
+            # user = CustomUserReadSerializer(request.user)
+            job_description = JobDescription.objects.all()
+            print(job_description)
             if not job_description:
                 raise CustomError("Job Description not found", code="JOB_DESCRIPTION_NOT_FOUND", status_code=status.HTTP_404_NOT_FOUND)
-            job_description_serz = JobDescriptionSerializer(job_description)
+            job_description_serz = JobDescriptionSerializer(job_description, many=True)
             return Response(job_description_serz.data, status=status.HTTP_200_OK)
         except Exception as e:
             details = getattr(e, 'details', {"error": str(e)})
@@ -294,6 +295,7 @@ class JobDescription(APIView):
             message = getattr(e, 'message', "Failed to update user data")
             status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
             raise CustomError(message, code=code, details=details, status_code=status_code)
+        
     def delete(self, request):
         try:
             user = CustomUserReadSerializer(request.user)
@@ -308,6 +310,7 @@ class JobDescription(APIView):
             message = getattr(e, 'message', "Failed to delete user data")
             status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
             raise CustomError(message, code=code, details=details, status_code=status_code)
+        
     def post(self, request):
         try:
             # serializer = CandidateSerializer(data=request.data)
