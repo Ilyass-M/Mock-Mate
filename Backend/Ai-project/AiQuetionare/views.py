@@ -129,7 +129,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                     httponly=True,
                     secure=True,
                     samesite='Lax',
-                    max_age=36000,  # 1 hour
+                    max_age=7 * 24 * 3600,  # 1 hour
                     path='/'
                 )
 
