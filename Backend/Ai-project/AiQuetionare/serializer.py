@@ -175,19 +175,27 @@ class CandidateSerializer(serializers.ModelSerializer):
                 print("Resume:", resume)
                 extracted_skills = get_data_from_cv(resume)
                
-                if extracted_skills is not None:
-                    candidate = Candidate.objects.create(user=user, **validated_data)
+                if extracted_skills is None:
+                    raise serializers.ValidationError("Error extracting skills from CV.")
+                candidate = Candidate.objects.create(user=user, **validated_data)
                 for skill_name in extracted_skills.get("technical_skills", []):
+                    
                     print(skill_name)
                     skill, _ = Skill.objects.get_or_create(name=skill_name)
                     candidate.skills.add(skill)
-            skills_data = validated_data.pop('skills', [])
-            for skill_data in skills_data:
-                skill_name = skill_data.get('name')
-                if skill_name:
+                for skill_name in extracted_skills.get("cs_topics", []):
+                    
+                    print(skill_name)
                     skill, _ = Skill.objects.get_or_create(name=skill_name)
                     candidate.skills.add(skill)
-
+            else:
+                skills_data = validated_data.pop('skills', [])
+                for skill_data in skills_data:
+                    skill_name = skill_data.get('name')
+                    if skill_name:
+                        skill, _ = Skill.objects.get_or_create(name=skill_name)
+                        candidate.skills.add(skill)
+            print("Candidate skills:", candidate.skills.all())
             # Save the candidate instance
             candidate.save()
 
