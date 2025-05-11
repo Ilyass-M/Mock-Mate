@@ -18,12 +18,25 @@ const Register = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-  };
 
+    setFormData((prev) => {
+      if (type === 'checkbox') {
+        // Ensure only one role is selected at a time
+        if (name === 'is_candidate' && checked) {
+          return { ...prev, is_candidate: true, is_recruiter: false };
+        }
+        if (name === 'is_recruiter' && checked) {
+          return { ...prev, is_candidate: false, is_recruiter: true };
+        }
+      }
+
+      return {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value,
+      };
+    });
+  };
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -134,7 +147,7 @@ const Register = () => {
                   type="tel"
                   required
                   className="pl-10 focus:ring-indigo-500 focus:border-indigo-500 block w-full rounded-lg border-gray-300 p-3 text-gray-900 text-sm"
-                  placeholder="+1 (555) 123-4567"
+                  placeholder="01234567890"
                   value={formData.phone_number}
                   onChange={handleChange}
                   disabled={loading}
