@@ -264,6 +264,7 @@ def a_star_search(graph, start, scores, asked_nodes, threshold=0.99):
 
 
 import random
+
 category_scores = questions_df.groupby("Category")["score"].max()
 
 top_5_categories = category_scores.sort_values(ascending=False).head(5).index.tolist()
