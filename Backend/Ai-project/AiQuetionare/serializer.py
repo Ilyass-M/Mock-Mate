@@ -140,7 +140,7 @@ class QuestionRelationshipSerializer(serializers.ModelSerializer):
 
 
 class CandidateSerializer(serializers.ModelSerializer):
-    user = CustomUserSerializer(read_only=True, required=False)
+    # user = CustomUserReadSerializer(read_only=True, required=False)
     skills = SkillSerializer(many=True, required=False)
 
     class Meta:
@@ -165,7 +165,8 @@ class CandidateSerializer(serializers.ModelSerializer):
             # Fetch the user instance
             try:
                 
-                user = CustomUser.objects.get(id=user_id)
+                user = CustomUser.objects.filter(id=user_id).first()
+                CustomUserReadSerializer(user)
             except CustomUser.DoesNotExist:
                 raise serializers.ValidationError("User with the given ID does not exist.")
 

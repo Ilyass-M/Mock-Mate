@@ -128,7 +128,7 @@ def unique_file_path(instance, filename):
     ext = filename.split('.')[-1]
     # Generate a unique filename using UUID
     filename = f"{uuid.uuid4().hex}.{ext}"
-    return os.path.join("resumes", filename)
+    return os.path.join("media/resumes/", filename)
 class Candidate(models.Model): 
     """Model for representing users taking assessments"""
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='candidate_profile')
