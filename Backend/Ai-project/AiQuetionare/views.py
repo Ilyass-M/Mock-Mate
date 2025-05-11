@@ -278,7 +278,7 @@ class JobDescriptionView(APIView):
             raise CustomError(message, code=code, details=details, status_code=status_code)
     def put(self, request):
         try:
-            user = CustomUserReadSerializer(request.user)
+            job_description_param = request.query_params.get('job_description_id')
             job_description = JobDescription.objects.filter(user=user.data['id']).first()
             if not job_description:
                 raise CustomError("Job Description not found", code="JOB_DESCRIPTION_NOT_FOUND", status_code=status.HTTP_404_NOT_FOUND)
