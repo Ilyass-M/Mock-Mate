@@ -1,18 +1,19 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { toast } from 'sonner';
+import { useAuth } from '../context/AuthContext';
 
 const CVUpload = () => {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState('');
+  const { user } = useAuth();
 
   const onDrop = useCallback((acceptedFiles) => {
     const uploadedFile = acceptedFiles[0];
     if (uploadedFile && uploadedFile.type === 'application/pdf') {
       setFile(uploadedFile);
-      setError('');
     } else {
-      setError('Please upload a PDF file');
+      toast.error('Please upload a PDF file');
     }
   }, []);
 
@@ -25,30 +26,34 @@ const CVUpload = () => {
   });
 
   const handleUpload = async () => {
-    if (!file) return;
+    if (!file) {
+      toast.error('Please select a file to upload');
+      return;
+    }
 
     setUploading(true);
-    setError('');
 
     const formData = new FormData();
     formData.append('cv', file);
+    formData.append('user_id', user.id);
 
     try {
-      const response = await fetch('http://localhost:8000/api/upload-cv/', {
+      const response = await fetch('http://localhost:8000/api/candidate/', {
         method: 'POST',
         body: formData,
         credentials: 'include'
       });
 
       if (!response.ok) {
-        throw new Error('Upload failed');
+        const error = await response.json();
+        throw new Error(error.message || 'Upload failed');
       }
 
       const data = await response.json();
-      // Handle successful upload
-      console.log('Upload successful:', data);
+      toast.success('CV uploaded successfully!');
+      setFile(null);
     } catch (err) {
-      setError('Failed to upload CV. Please try again.');
+      toast.error(err.message || 'Failed to upload CV. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -65,38 +70,41 @@ const CVUpload = () => {
 
       <div
         {...getRootProps()}
-        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
-          ${isDragActive ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 hover:border-indigo-500'}`}
+        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+          isDragActive
+            ? 'border-indigo-500 bg-indigo-50'
+            : 'border-gray-300 hover:border-indigo-400'
+        }`}
       >
         <input {...getInputProps()} />
         <div className="space-y-4">
-          <div className="flex justify-center">
+          <div className="mx-auto w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
             <svg
-              className="h-12 w-12 text-gray-400"
-              stroke="currentColor"
+              className="w-6 h-6 text-indigo-600"
               fill="none"
-              viewBox="0 0 48 48"
-              aria-hidden="true"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
             >
               <path
-                d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                strokeWidth={2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                strokeWidth={2}
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
               />
             </svg>
           </div>
-          <div className="text-sm text-gray-600">
+          <div>
             {isDragActive ? (
-              <p>Drop your CV here</p>
+              <p className="text-indigo-600 font-medium">Drop your CV here</p>
             ) : (
-              <p>
+              <p className="text-gray-600">
                 Drag and drop your CV here, or{' '}
-                <span className="text-indigo-600">click to select</span>
+                <span className="text-indigo-600 font-medium">click to select</span>
               </p>
             )}
+            <p className="mt-1 text-sm text-gray-500">PDF files only</p>
           </div>
-          <p className="text-xs text-gray-500">PDF files only</p>
         </div>
       </div>
 
@@ -105,10 +113,11 @@ const CVUpload = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <svg
-                className="h-6 w-6 text-gray-400"
+                className="w-6 h-6 text-gray-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
               >
                 <path
                   strokeLinecap="round"
@@ -117,17 +126,18 @@ const CVUpload = () => {
                   d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
                 />
               </svg>
-              <span className="text-sm text-gray-900">{file.name}</span>
+              <span className="text-sm font-medium text-gray-900">{file.name}</span>
             </div>
             <button
               onClick={() => setFile(null)}
               className="text-gray-400 hover:text-gray-500"
             >
               <svg
-                className="h-5 w-5"
+                className="w-5 h-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
               >
                 <path
                   strokeLinecap="round"
@@ -141,19 +151,23 @@ const CVUpload = () => {
         </div>
       )}
 
-      {error && (
-        <div className="mt-4 p-4 bg-red-50 rounded-lg">
-          <p className="text-sm text-red-700">{error}</p>
-        </div>
-      )}
-
       <div className="mt-6">
         <button
           onClick={handleUpload}
           disabled={!file || uploading}
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {uploading ? 'Uploading...' : 'Upload CV'}
+          {uploading ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Uploading...
+            </>
+          ) : (
+            'Upload CV'
+          )}
         </button>
       </div>
     </div>

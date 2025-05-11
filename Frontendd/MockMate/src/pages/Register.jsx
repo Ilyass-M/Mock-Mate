@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import authService from '../services/authService';
+import { toast } from 'sonner';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -13,7 +14,6 @@ const Register = () => {
     is_recruiter: false,
     is_candidate: false
   });
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -26,21 +26,21 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
 
     // Ensure at least one role is selected
     if (!formData.is_recruiter && !formData.is_candidate) {
-      setError('Please select at least one role (Recruiter or Candidate)');
+      toast.error('Please select at least one role (Recruiter or Candidate)');
       setLoading(false);
       return;
     }
 
     try {
       await authService.register(formData);
+      toast.success('Account created successfully! Please sign in.');
       navigate('/login');
     } catch (err) {
-      setError(err.error || 'An error occurred during registration');
+      toast.error(err.error || 'An error occurred during registration');
     } finally {
       setLoading(false);
     }
@@ -59,21 +59,6 @@ const Register = () => {
         </div>
         
         <form className="space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="rounded-lg bg-red-50 p-4 border-l-4 border-red-500">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
-              </div>
-            </div>
-          )}
-          
           <div className="space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
@@ -88,6 +73,7 @@ const Register = () => {
                   className="focus:ring-indigo-500 focus:border-indigo-500 block w-full rounded-lg border-gray-300 p-3 text-gray-900 text-sm"
                   value={formData.fullname}
                   onChange={handleChange}
+                  disabled={loading}
                 />
               </div>
               
@@ -103,6 +89,7 @@ const Register = () => {
                   className="focus:ring-indigo-500 focus:border-indigo-500 block w-full rounded-lg border-gray-300 p-3 text-gray-900 text-sm"
                   value={formData.username}
                   onChange={handleChange}
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -126,6 +113,7 @@ const Register = () => {
                   placeholder="you@example.com"
                   value={formData.email}
                   onChange={handleChange}
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -149,6 +137,7 @@ const Register = () => {
                   placeholder="+1 (555) 123-4567"
                   value={formData.phone_number}
                   onChange={handleChange}
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -172,6 +161,7 @@ const Register = () => {
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={handleChange}
+                  disabled={loading}
                 />
               </div>
               <p className="mt-1 text-xs text-gray-500">
@@ -193,6 +183,7 @@ const Register = () => {
                       className="h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                       checked={formData.is_candidate}
                       onChange={handleChange}
+                      disabled={loading}
                     />
                   </div>
                   <div className="ml-3">
@@ -217,6 +208,7 @@ const Register = () => {
                       className="h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                       checked={formData.is_recruiter}
                       onChange={handleChange}
+                      disabled={loading}
                     />
                   </div>
                   <div className="ml-3">
@@ -239,7 +231,7 @@ const Register = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-150 ease-in-out disabled:opacity-50"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
