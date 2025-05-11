@@ -241,7 +241,12 @@ class candidateView(APIView):
             raise CustomError(message, code=code, details=details, status_code=status_code)
     def post(self, request):
         try:
-            # serializer = CandidateSerializer(data=request.data)
+            already_exists = Candidate.objects.filter(user=request.user).exists()
+            user = CustomUserReadSerializer(request.user)
+            if already_exists:
+                 candidate = Candidate.objects.filter(user=user.data['id']).first()
+                 candidate.delete()
+
             serializer = CandidateSerializer(data=request.data, context={'request': request})
             # serializer = self.get_serializer(data=request.data, context={'request': request})
             if serializer.is_valid():
