@@ -44,11 +44,15 @@ class UserView(APIView):
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
-            raise CustomError("Invalid data", code="USER_UPDATE_ERROR", details=serializer.errors)
+            raise CustomError("Invalid data", code="USER_UPDATE_ERROR", details=serializer.errors, status_code=status.HTTP_400_BAD_REQUEST)
         except ValidationError as ve:
-            raise CustomError("Validation error", code="USER_UPDATE_ERROR", details=ve.detail)
+            raise CustomError("Validation error", code="USER_UPDATE_ERROR", details=ve.detail, status_code=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            raise CustomError("Failed to update user data", code="USER_UPDATE_ERROR", details={"error": str(e)})
+            details = getattr(e, 'details', {"error": str(e)})
+            code = getattr(e, 'code', "UNKNOWN_ERROR")
+            message = getattr(e, 'message', "Failed to update user data")
+            status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
+            raise CustomError(message, code=code, details=details, status_code=status_code)
 
     def delete(self, request):
         try:
@@ -58,7 +62,11 @@ class UserView(APIView):
             user.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
-            raise CustomError("Failed to delete user", code="USER_DELETE_ERROR", details={"error": str(e)})
+            details = getattr(e, 'details', {"error": str(e)})
+            code = getattr(e, 'code', "USER_DELETE_ERROR")
+            message = getattr(e, 'message', "Failed to delete user")
+            status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
+            raise CustomError(message, code=code, details=details, status_code=status_code)
 
     def post(self, request):
             print("Hellopost")
@@ -83,7 +91,24 @@ class UserView(APIView):
                 status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
                 raise CustomError(message, code, details=details, status_code=status_code)
 
-
+    def patch(self, request):
+        try:
+            if not request.user.is_authenticated:
+                raise CustomError("User not authenticated", code="USER_NOT_AUTHENTICATED", status_code=status.HTTP_401_UNAUTHORIZED)
+            user = request.user
+            serializer = CustomUserSerializer(user, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            raise CustomError("Invalid data", code="USER_UPDATE_ERROR", details=serializer.errors, status_code=status.HTTP_400_BAD_REQUEST)
+        except ValidationError as ve:
+            raise CustomError("Validation error", code="USER_UPDATE_ERROR", details=ve.detail, status_code=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            details = getattr(e, 'details', {"error": str(e)})
+            code = getattr(e, 'code', "UNKNOWN_ERROR")
+            message = getattr(e, 'message', "Failed to update user data")
+            status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
+            raise CustomError(message, code=code, details=details, status_code=status_code)
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = EmailTokenObtainPairSerializer
@@ -126,9 +151,19 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             return response
 
         except ValidationError as ve:
-            raise CustomError("Validation error", code="LOGIN_ERROR", details=ve.detail)
+            code = getattr(ve, 'code', "VALIDATION_ERROR")
+            message = getattr(ve, 'message', "Validation error")
+            details = getattr(ve, 'details', {"error": str(ve)})
+            status_code = getattr(ve, 'status_code', status.HTTP_400_BAD_REQUEST)
+
+            raise CustomError(message, code=code, details=details, status_code=status_code)
         except Exception as e:
-            raise CustomError("Failed to process login request", code="LOGIN_ERROR", details={"error": str(e)})
+            details = getattr(e, 'details', {"error": str(e)})
+            code = getattr(e, 'code', "UNKNOWN_ERROR")
+            message = getattr(e, 'message', "Failed to process login request")
+            status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
+            raise CustomError(message, code=code, details=details, status_code=status_code)
+
 
 
 class LogoutView(APIView):
