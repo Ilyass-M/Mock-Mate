@@ -75,6 +75,12 @@ class JobDescriptionSerializer(serializers.ModelSerializer):
         model = JobDescription
         fields = ['id', 'title', 'description', 'created_at', 'updated_at', 'skills']
 
+    def create(self, validated_data):
+        user = self.context['request'].user
+        if not user.is_recruiter:
+            raise serializers.ValidationError("Only recruiters can create job descriptions.")
+        
+        return super().create(validated_data)
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:

@@ -6,13 +6,13 @@ from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
-from AiQuetionare.serializer import EmailTokenObtainPairSerializer, CustomUserSerializer, CustomUserReadSerializer, CandidateSerializer
+from AiQuetionare.serializer import EmailTokenObtainPairSerializer, CustomUserSerializer, CustomUserReadSerializer, CandidateSerializer, JobDescriptionSerializer
 from AiQuetionare.Error import CustomError
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
-from AiQuetionare.models import Candidate
+from AiQuetionare.models import Candidate, JobDescription
 
 
 User = get_user_model()
@@ -257,3 +257,73 @@ class candidateView(APIView):
             message = getattr(e, 'message', "Failed to process request")
             status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
             raise CustomError(message, code=code, details=details, status_code=status_code)
+        
+class JobDescription(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        try:
+            user = CustomUserReadSerializer(request.user)
+            job_description = JobDescription.objects.filter(user=user.data['id']).first()
+            if not job_description:
+                raise CustomError("Job Description not found", code="JOB_DESCRIPTION_NOT_FOUND", status_code=status.HTTP_404_NOT_FOUND)
+            job_description_serz = JobDescriptionSerializer(job_description)
+            return Response(job_description_serz.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            details = getattr(e, 'details', {"error": str(e)})
+            code = getattr(e, 'code', "USER_RETRIEVAL_ERROR")
+            message = getattr(e, 'message', "Failed to retrieve user data")
+            status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
+            raise CustomError(message, code=code, details=details, status_code=status_code)
+    def put(self, request):
+        try:
+            user = CustomUserReadSerializer(request.user)
+            job_description = JobDescription.objects.filter(user=user.data['id']).first()
+            if not job_description:
+                raise CustomError("Job Description not found", code="JOB_DESCRIPTION_NOT_FOUND", status_code=status.HTTP_404_NOT_FOUND)
+            job_description_serz = JobDescriptionSerializer(job_description, data=request.data, partial=True)
+            if job_description_serz.is_valid():
+                job_description_serz.save()
+                return Response(job_description_serz.data, status=status.HTTP_200_OK)
+            raise CustomError("Invalid data", code="JOB_DESCRIPTION_UPDATE_ERROR", details=job_description_serz.errors, status_code=status.HTTP_400_BAD_REQUEST)
+        except ValidationError as ve:
+            raise CustomError("Validation error", code="JOB_DESCRIPTION_UPDATE_ERROR", details=ve.detail, status_code=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            details = getattr(e, 'details', {"error": str(e)})
+            code = getattr(e, 'code', "UNKNOWN_ERROR")
+            message = getattr(e, 'message', "Failed to update user data")
+            status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
+            raise CustomError(message, code=code, details=details, status_code=status_code)
+    def delete(self, request):
+        try:
+            user = CustomUserReadSerializer(request.user)
+            job_description = JobDescription.objects.filter(user=user.data['id']).first()
+            if not job_description:
+                raise CustomError("Job Description not found", code="JOB_DESCRIPTION_NOT_FOUND", status_code=status.HTTP_404_NOT_FOUND)
+            job_description.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            details = getattr(e, 'details', {"error": str(e)})
+            code = getattr(e, 'code', "UNKNOWN_ERROR")
+            message = getattr(e, 'message', "Failed to delete user data")
+            status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
+            raise CustomError(message, code=code, details=details, status_code=status_code)
+    def post(self, request):
+        try:
+            # serializer = CandidateSerializer(data=request.data)
+            serializer = JobDescriptionSerializer(data=request.data, context={'request': request})
+            # serializer = self.get_serializer(data=request.data, context={'request': request})
+            if serializer.is_valid():
+                job_description = serializer.save()
+                read_serializer = JobDescriptionSerializer(job_description)
+                return Response(read_serializer.data, status=status.HTTP_201_CREATED)
+            raise CustomError("Invalid data", code="JOB_DESCRIPTION_CREATION_ERROR", details=serializer.errors, status_code=status.HTTP_400_BAD_REQUEST)
+        except ValidationError as ve:
+            raise CustomError("Validation error", code="JOB_DESCRIPTION_VALIDATION_ERROR", details=ve.detail, status_code=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            details = getattr(e, 'details', {"error": str(e)})
+            code = getattr(e, 'code', "UNKNOWN_ERROR")
+            message = getattr(e, 'message', "Failed to process request")
+            status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
+            raise CustomError(message, code=code, details=details, status_code=status_code)
+        

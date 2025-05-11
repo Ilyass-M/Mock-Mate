@@ -39,7 +39,7 @@ def cv_extract(data):
     '''
     
     # client = genai.Client(api_key=os.getenv("GENAI_API_KEY"))
-    client = genai.Client(api_key= 'AIzaSyBTLRYmyB72eKXVBOmacHTKymsl7kuR1Xs')
+    client = genai.Client(api_key= os.getenv("GENAI_API_KEY"))
     user_data = data
     
     response = client.models.generate_content(
