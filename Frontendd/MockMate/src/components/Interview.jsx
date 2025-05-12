@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { MessageSquare, Send, Loader2, ArrowLeft } from 'lucide-react';
-
+import Cookies from 'universal-cookie';
 const Interview = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -14,10 +14,14 @@ const Interview = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [interviewId, setInterviewId] = useState(null);
   const [jobDetails, setJobDetails] = useState(null);
+  const cookies = new Cookies();
   const ws = useRef(null);
   const messagesEndRef = useRef(null);
-
-  useEffect(() => {
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+  };  useEffect(() => {
     const params = new URLSearchParams(location.search);
     const sessionId = params.get('session');
     const jobId = params.get('job');
@@ -28,13 +32,21 @@ const Interview = () => {
       return;
     }
 
-    setInterviewId(sessionId);
-    fetchJobDetails(jobId);
-  }, [location.search, navigate]);
+    setInterviewId(jobId);
+    // Connect directly to the WebSocket without fetching job details
+    connectWebSocket(jobId);
+    
+    // Cleanup function to close WebSocket when component unmounts
+    return () => {
+      if (ws.current) {
+        ws.current.close();
+      }
+    };
+  }, [location.search, navigate, connectWebSocket]);
 
   const fetchJobDetails = async (jobId) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/jobs/${jobId}/`, {
+      const response = await fetch(`http://localhost:8000/api/JobDescription/${jobId}/`, {
         credentials: 'include'
       });
 
@@ -43,6 +55,7 @@ const Interview = () => {
       }
 
       const data = await response.json();
+      console.log("Job Details:", data);
       setJobDetails(data);
       connectWebSocket(interviewId);
     } catch (error) {
@@ -58,34 +71,52 @@ const Interview = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+  const connectWebSocket = useCallback((id) => {
+    if (!id) {
+      console.error("Interview ID is missing");
+      return;
+    }
 
-  const connectWebSocket = (id) => {
-    ws.current = new WebSocket(`ws://localhost:8000/ws/interview/${id}/`);
+    // Use the hardcoded token for now
+    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ3NjQ3Mzk2LCJpYXQiOjE3NDcwNDI1OTYsImp0aSI6IjgzZDRmNDRhNmY3NzQ5NGViOWMzOGU2ZTJmYTc3ZjIyIiwidXNlcl9pZCI6MX0.jcPUcqdPJKY50S-5E59a2oZ4epw4JrzeDguyKjI9DP4";
+    console.log("Using token:", token);
+    const wsUrl = `ws://127.0.0.1:8000/interview/${id}/?token=${token}`;
+    ws.current = new WebSocket(wsUrl);
 
     ws.current.onopen = () => {
       setIsConnected(true);
-      ws.current.send(JSON.stringify({
-        type: 'start_interview',
-        message: ''
-      }));
+      ws.current.send(
+        JSON.stringify({
+          type: "start_interview",
+          message: "",
+        })
+      );
     };
 
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      setMessages(prev => [...prev, {
-        type: data.type,
-        content: data.message,
-        sender: data.type === 'question' ? 'ai' : 'user'
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          type: data.type,
+          content: data.message,
+          sender: data.type === "question" ? "ai" : "user",
+        },
+      ]);
     };
 
-    ws.current.onclose = () => {
+    ws.current.onclose = (event) => {
       setIsConnected(false);
+      console.warn("WebSocket closed", event);
+      if (!event.wasClean) {
+        toast.error("WebSocket connection lost. Reconnecting...");
+        setTimeout(() => connectWebSocket(id), 5000); // Reconnect after 5 seconds
+      }
     };
 
     ws.current.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      toast.error('Connection error. Please try again.');
+      console.error("WebSocket error:", error);
+      toast.error("Connection error. Please try again.");
     };
   };
 
@@ -171,11 +202,10 @@ const Interview = () => {
                 className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[70%] rounded-lg px-4 py-2 ${
-                    message.sender === 'user'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-gray-100 text-gray-900'
-                  }`}
+                  className={`max-w-[70%] rounded-lg px-4 py-2 ${message.sender === 'user'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-100 text-gray-900'
+                    }`}
                 >
                   {message.type === 'evaluation' && (
                     <div className="text-sm font-medium mb-1">Evaluation:</div>
@@ -222,4 +252,4 @@ const Interview = () => {
   );
 };
 
-export default Interview; 
+export default Interview;

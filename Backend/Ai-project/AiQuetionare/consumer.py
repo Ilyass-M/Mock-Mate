@@ -30,10 +30,11 @@ class InterviewConsumer(AsyncWebsocketConsumer):
             job_description = await self.get_job_description(job_desc_id)
             if not job_description:
                 return None
-
+            getcandidate = await sync_to_async(Candidate.objects.get)(user=self.scope['user'].id)
+            self.candidate = getcandidate
             assessment, created = await sync_to_async(Assessment.objects.get_or_create)(
                 job_description=job_description,
-                defaults={'created_at': timezone.now()}
+                candidate=self.candidate,
             )
             
             return assessment
