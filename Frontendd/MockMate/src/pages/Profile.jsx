@@ -22,7 +22,7 @@ const Profile = () => {
     const [isEditing, setIsEditing] = useState(false)
     const [error, setError] = useState(null)
     const [success, setSuccess] = useState(null)
-    const [newSkill, setNewSkill] = useState({ name: "", level: 50 })
+    const [newSkill, setNewSkill] = useState({ name: "" })
 
 
     const url = "http://localhost:8000"
@@ -31,9 +31,8 @@ const Profile = () => {
             const response = await axios.get(url + "/api/user/", { withCredentials: true })
             const skills = await axios.get(url + "/api/skills/", { withCredentials: true })
             console.log("User data fetched successfully:", response.data)
-            console.log(skills)
             response.data.skills = skills.data
-            return  response.data 
+            return response.data
         }
         catch (error) {
             console.error("Error fetching user data:", error)
@@ -52,18 +51,27 @@ const Profile = () => {
                     is_recruiter: data.is_recruiter || false,
                     bio: data.bio || "Frontend developer passionate about creating beautiful user experiences.",
                     avatar: data.avatar || "/placeholder.svg?height=200&width=200",
-                    skills: data.skills || [
-                        { name: "React", level: 90 },
-                        { name: "JavaScript", level: 85 },
-                        { name: "CSS", level: 75 },
-                        { name: "Node.js", level: 65 },
-                    ],
+                    skills: data.skills || []
                 })
             }
         })
 
     }, [])
-
+    useEffect(() => {
+        if (success) {
+            const timer = setTimeout(() => {
+                setSuccess(null)
+            }, 3000)
+            return () => clearTimeout(timer)
+        }
+        if (error) {
+            const timer = setTimeout(() => {
+                setError(null)
+            }
+            , 3000)
+            return () => clearTimeout(timer)
+        }
+    }, [success, error])
     const handleInputChange = (e) => {
         const { name, value } = e.target
         setProfileData((prevData) => ({
@@ -127,14 +135,47 @@ const Profile = () => {
             reader.readAsDataURL(file)
         }
     }
+    const addskilltocandidate = async (skill) => {
+        try {
+            const response = await axios.post(url + "/api/skills/", { "skill": skill }, { withCredentials: true })
+            if (response.status === 200) {
+                console.log("Skill added successfully:", response.data)
+                setSuccess("Skill added successfully!")
+            } else {
+                console.error("Error adding skill:", response)
+                setError("Failed to add skill. Please try again.")
+            }
+        } catch (error) {
+            console.error("Error adding skill:", error)
 
+            setError("Failed to add skill. Please try again.")
+        }
+    }
     const addSkill = () => {
         if (newSkill.name.trim()) {
             setProfileData((prevData) => ({
                 ...prevData,
-                skills: [...prevData.skills, { ...newSkill }],
+                skills: [...prevData.skills, newSkill.name],
             }))
-            setNewSkill({ name: "", level: 50 })
+            setNewSkill({ name: "" })
+        }
+        addskilltocandidate(newSkill.name)
+    }
+    const handleskilldelete = async (skill) => {
+        try {
+            // Using query parameters to specify which skill to delete
+            const response = await axios.delete(url + `/api/skills/?skill=${encodeURIComponent(skill)}`, { withCredentials: true })
+            if (response.status === 200) {
+                console.log("Skill deleted successfully:", response.data)
+                setSuccess("Skill deleted successfully!")
+            } else {
+                console.error("Error deleting skill:", response)
+                setError("Failed to delete skill. Please try again.")
+            }
+        }
+        catch (error) {
+            console.error("Error deleting skill:", error)
+            setError("Failed to delete skill. Please try again.")
         }
     }
 
@@ -143,6 +184,7 @@ const Profile = () => {
             ...prevData,
             skills: prevData.skills.filter((_, i) => i !== index),
         }))
+        handleskilldelete(profileData.skills[index])
     }
 
     const handleSkillLevelChange = (index, level) => {
@@ -159,99 +201,9 @@ const Profile = () => {
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
                     {/* Left Column - Profile Picture & Basic Info */}
-                    <div className="md:col-span-1">
-                        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                            <div className="relative bg-gradient-to-r from-purple-500 to-indigo-600 h-32">
-                                {isEditing && (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                                        <button className="px-3 py-1 bg-white text-gray-800 text-sm rounded-md hover:bg-gray-100 transition-colors">
-                                            Change Cover
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="flex justify-center -mt-16 relative">
-                                <div className="relative">
-                                    <div className="h-32 w-32 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-100">
-                                        {profileData.avatar ? (
-                                            <img
-                                                src={profileData.avatar || "/placeholder.svg"}
-                                                alt={profileData.fullname}
-                                                className="h-full w-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="h-full w-full flex items-center justify-center bg-indigo-100 text-indigo-600 text-2xl font-bold">
-                                                {profileData.fullname
-                                                    ?.split(" ")
-                                                    .map((n) => n[0])
-                                                    .join("") || "U"}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {isEditing && (
-                                        <label
-                                            htmlFor="avatar-upload"
-                                            className="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full cursor-pointer shadow-md hover:bg-indigo-700 transition-colors"
-                                        >
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                width="16"
-                                                height="16"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            >
-                                                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>
-                                                <circle cx="12" cy="13" r="3"></circle>
-                                            </svg>
-                                            <input
-                                                id="avatar-upload"
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={handleAvatarChange}
-                                            />
-                                        </label>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="text-center pt-2 px-4 pb-4">
-                                <h2 className="text-xl font-bold text-gray-800">{profileData.fullname || "Your Name"}</h2>
-                                <p className="text-sm text-gray-500">@{profileData.username || "username"}</p>
-
-                                <div className="mt-6 space-y-4">
-                                    <div>
-                                        <h3 className="text-sm font-medium text-gray-500">Bio</h3>
-                                        {isEditing ? (
-                                            <textarea
-                                                name="bio"
-                                                value={profileData.bio || ""}
-                                                onChange={handleInputChange}
-                                                rows={3}
-                                                className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
-                                            />
-                                        ) : (
-                                            <p className="mt-1 text-sm text-gray-700">{profileData.bio}</p>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <h3 className="text-sm font-medium text-gray-500">Contact</h3>
-                                        <p className="mt-1 text-sm text-gray-700">{profileData.email}</p>
-                                        <p className="mt-1 text-sm text-gray-700">{profileData.phone_number || "No phone number"}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    
 
                     {/* Right Column - Profile Details & Skills */}
                     <div className="md:col-span-2">
@@ -271,7 +223,7 @@ const Profile = () => {
                                 {!isEditing ? (
                                     <button
                                         onClick={() => setIsEditing(true)}
-                                        className="px-3 py-1 border border-gray-300 rounded-md text-sm flex items-center gap-1 hover:bg-gray-50 transition-colors"
+                                        className="px-3 py-1 border border-gray-300 rounded-md text-sm flex items-center gap-1 text-white    hover:bg-gray-50 transition-colors"
                                     >
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
@@ -292,7 +244,7 @@ const Profile = () => {
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() => setIsEditing(false)}
-                                            className="px-3 py-1 border border-gray-300 rounded-md text-sm flex items-center gap-1 hover:bg-gray-50 transition-colors"
+                                            className="px-3 text-white py-1 border border-gray-300 rounded-md text-sm flex items-center gap-1 hover:bg-gray-50  bg-red-800"
                                         >
                                             <svg
                                                 xmlns="http://www.w3.org/2000/svg"
@@ -339,7 +291,7 @@ const Profile = () => {
                             <div className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label htmlFor="fullname" className="block text-sm font-medium text-gray-700 mb-1">
+                                        <label htmlFor="fullname" className="block text-sm font-medium text-gray-700 mb-1 text-left">
                                             Full Name
                                         </label>
                                         <input
@@ -353,7 +305,7 @@ const Profile = () => {
                                     </div>
 
                                     <div>
-                                        <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                                        <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1 text-left">
                                             Username
                                         </label>
                                         <input
@@ -367,7 +319,7 @@ const Profile = () => {
                                     </div>
 
                                     <div>
-                                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1 text-left">
                                             Email
                                         </label>
                                         <input
@@ -382,7 +334,7 @@ const Profile = () => {
                                     </div>
 
                                     <div>
-                                        <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700 mb-1">
+                                        <label htmlFor="phone_number" className="text-left block text-sm font-medium text-gray-700 mb-1">
                                             Phone Number
                                         </label>
                                         <input
@@ -402,112 +354,77 @@ const Profile = () => {
                             <div className="mb-4">
                                 <h2 className="text-lg font-bold text-gray-800">Skills</h2>
                                 <p className="text-sm text-gray-500">Your professional skills and expertise</p>
-                            </div>
-
-                            <div className="space-y-4">
-                                {profileData.skills.map((skill, index) => (
-                                    <div key={index} className="space-y-1">
-                                        <div className="flex justify-between items-center">
-                                            <span className="font-medium text-sm">{skill.name}</span>
-                                            <div className="flex items-center">
-                                                <span className="text-xs text-gray-500 mr-2">{skill.level}%</span>
-                                                {isEditing && (
-                                                    <button
-                                                        className="h-6 w-6 p-0 text-gray-400 hover:text-red-500"
-                                                        onClick={() => removeSkill(index)}
-                                                    >
-                                                        <svg
-                                                            xmlns="http://www.w3.org/2000/svg"
-                                                            width="16"
-                                                            height="16"
-                                                            viewBox="0 0 24 24"
-                                                            fill="none"
-                                                            stroke="currentColor"
-                                                            strokeWidth="2"
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                        >
-                                                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                                                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                                                        </svg>
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                                                <div className="bg-indigo-600 h-2 rounded-full" style={{ width: `${skill.level}%` }}></div>
-                                            </div>
+                            </div>                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                    {profileData.skills.map((skill, index) => (
+                                        <div
+                                            key={index}
+                                            className="bg-indigo-50 rounded-lg p-3 relative shadow-sm border border-indigo-100"
+                                        >
+                                            <div className="font-medium text-indigo-800">{skill}</div>
                                             {isEditing && (
-                                                <input
-                                                    type="range"
-                                                    min="0"
-                                                    max="100"
-                                                    value={skill.level}
-                                                    onChange={(e) => handleSkillLevelChange(index, Number.parseInt(e.target.value))}
-                                                    className="w-full h-2"
-                                                />
+                                                <button
+                                                    className="text-white"
+                                                    onClick={() => removeSkill(index)}
+                                                    title="Remove skill"
+                                                >
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        width="14"
+                                                        height="14"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                    >
+                                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                    </svg>
+                                                </button>
                                             )}
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
 
-                                {isEditing && (
-                                    <div className="mt-4 pt-4 border-t">
-                                        <h4 className="text-sm font-medium mb-2">Add New Skill</h4>
-                                        <div className="flex gap-2">
-                                            <input
-                                                placeholder="Skill name"
-                                                value={newSkill.name}
-                                                onChange={(e) => setNewSkill({ ...newSkill, name: e.target.value })}
-                                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                                            />
-                                            <div className="w-24 flex items-center gap-2">
+                                    {isEditing && (
+                                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 flex flex-col items-center justify-center min-h-[80px]">
+                                            <div className="flex flex-col w-full gap-2">
                                                 <input
-                                                    type="range"
-                                                    min="0"
-                                                    max="100"
-                                                    value={newSkill.level}
-                                                    onChange={(e) => setNewSkill({ ...newSkill, level: Number.parseInt(e.target.value) })}
-                                                    className="w-full"
+                                                    placeholder="Add a new skill"
+                                                    value={newSkill.name}
+                                                    onChange={(e) => setNewSkill({ name: e.target.value })}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
                                                 />
-                                                <span className="text-xs w-8">{newSkill.level}%</span>
-                                            </div>
-                                            <button
-                                                onClick={addSkill}
-                                                className="px-2 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-                                            >
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    width="16"
-                                                    height="16"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth="2"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
+                                                <button
+                                                    onClick={addSkill}
+                                                    disabled={!newSkill.name.trim()}
+                                                    className="px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700  transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed text-sm w-full flex items-center justify-center gap-1"
                                                 >
-                                                    <circle cx="12" cy="12" r="10"></circle>
-                                                    <line x1="12" y1="8" x2="12" y2="16"></line>
-                                                    <line x1="8" y1="12" x2="16" y2="12"></line>
-                                                </svg>
-                                            </button>
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        width="14"
+                                                        height="14"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                    >
+                                                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                                    </svg>
+                                                    Add Skill
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
 
-                                {!isEditing && profileData.skills.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mt-2">
-                                        {profileData.skills.map((skill, index) => (
-                                            <span
-                                                key={index}
-                                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
-                                            >
-                                                {skill.name}
-                                            </span>
-                                        ))}
+                                {!isEditing && profileData.skills.length === 0 && (
+                                    <div className="text-center py-6 text-gray-500">
+                                        No skills added yet. Click Edit to add skills.
                                     </div>
                                 )}
                             </div>

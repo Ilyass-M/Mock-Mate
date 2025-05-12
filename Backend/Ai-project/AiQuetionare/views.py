@@ -6,13 +6,13 @@ from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
-from AiQuetionare.serializer import EmailTokenObtainPairSerializer, CustomUserSerializer, CustomUserReadSerializer, CandidateSerializer, JobDescriptionSerializer, Category, Question
+from AiQuetionare.serializer import EmailTokenObtainPairSerializer, CustomUserSerializer, CustomUserReadSerializer, CandidateSerializer, JobDescriptionSerializer, Category, Question, SkillSerializer
 from AiQuetionare.Error import CustomError
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
-from AiQuetionare.models import Candidate, JobDescription
+from AiQuetionare.models import Candidate, JobDescription, Skill
 from django.contrib.auth.models import Group
 import pandas as pd
 from io import StringIO
@@ -502,8 +502,7 @@ class QuestionCSVUploadView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class UserSkills(APIView):
-    permission_classes = [IsAuthenticated]
-
+    permission_classes = [IsAuthenticated]    
     def get(self, request):
         try:
             user = CustomUserReadSerializer(request.user)
@@ -520,20 +519,46 @@ class UserSkills(APIView):
             message = getattr(e, 'message', "Failed to retrieve user data")
             status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
             raise CustomError(message, code=code, details=details, status_code=status_code)
+            
     def post(self, request):
         try:
             user = CustomUserReadSerializer(request.user)
             user_id = user.data['id']
+            
+            # Get skill name from request data
+            skill_name = request.data.get('skill')
+            if not skill_name or not skill_name.strip():
+                raise CustomError("Skill name is required", code="SKILL_REQUIRED", status_code=status.HTTP_400_BAD_REQUEST)
+            
+            # Trim any whitespace from skill name
+            skill_name = skill_name.strip()
+
+            # Get candidate profile
             candidate = Candidate.objects.filter(user=user_id).first()
             if not candidate:
                 raise CustomError("Candidate not found", code="CANDIDATE_NOT_FOUND", status_code=status.HTTP_404_NOT_FOUND)
-            skills = candidate.skills.all()
-            skills_list = [skill.name for skill in skills]
-            return Response(skills_list, status=status.HTTP_200_OK)
+            
+            # Check if skill already exists for this candidate
+            existing_skills = candidate.skills.all()
+            for existing_skill in existing_skills:
+                if existing_skill.name.lower() == skill_name.lower():
+                    raise CustomError("Skill already exists", code="SKILL_EXISTS", status_code=status.HTTP_400_BAD_REQUEST)
+            
+            # Get or create the skill
+            skill_obj, created = Skill.objects.get_or_create(name=skill_name)
+            
+            # Add skill to candidate
+            candidate.skills.add(skill_obj)
+            
+            # Return updated skills list
+            return Response([skill.name for skill in candidate.skills.all()], status=status.HTTP_200_OK)
+        except CustomError as ce:
+            # Re-raise any custom errors we've defined
+            raise ce
         except Exception as e:
             details = getattr(e, 'details', {"error": str(e)})
-            code = getattr(e, 'code', "USER_RETRIEVAL_ERROR")
-            message = getattr(e, 'message', "Failed to retrieve user data")
+            code = getattr(e, 'code', "SKILL_OPERATION_ERROR")
+            message = getattr(e, 'message', "Failed to add skill")
             status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
             raise CustomError(message, code=code, details=details, status_code=status_code)
     def put(self, request):
@@ -553,20 +578,40 @@ class UserSkills(APIView):
             status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
             raise CustomError(message, code=code, details=details, status_code=status_code)
     def delete(self, request):
+        
         try:
             user = CustomUserReadSerializer(request.user)
             user_id = user.data['id']
+            skill_name = request.query_params.get('skill')
             candidate = Candidate.objects.filter(user=user_id).first()
             if not candidate:
                 raise CustomError("Candidate not found", code="CANDIDATE_NOT_FOUND", status_code=status.HTTP_404_NOT_FOUND)
-            skills = candidate.skills.all()
-            for skill in skills:
-                skill.delete()
-            return Response({"message": "Skills deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+            
+            if skill_name:
+                # Look for the skill by name
+                found = False
+                skills = candidate.skills.all()
+                for skill in skills:
+                    if skill.name.lower() == skill_name.lower():
+                        candidate.skills.remove(skill)
+                        found = True
+                        break
+                
+                if not found:
+                    raise CustomError("Skill not found", code="SKILL_NOT_FOUND", status_code=status.HTTP_404_NOT_FOUND)
+                
+                return Response({"message": f"Skill '{skill_name}' removed successfully"}, status=status.HTTP_200_OK)
+            else:
+                # If no skill specified, remove all skills
+                candidate.skills.clear()               
+            return Response({"message": "All skills removed successfully"}, status=status.HTTP_200_OK)
+        except CustomError as ce:
+            # Re-raise any custom errors we've defined
+            raise ce
         except Exception as e:
             details = getattr(e, 'details', {"error": str(e)})
-            code = getattr(e, 'code', "USER_RETRIEVAL_ERROR")
-            message = getattr(e, 'message', "Failed to retrieve user data")
+            code = getattr(e, 'code', "SKILL_DELETE_ERROR")
+            message = getattr(e, 'message', "Failed to delete skill")
             status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
             raise CustomError(message, code=code, details=details, status_code=status_code)
     def patch(self, request):
