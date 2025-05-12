@@ -9,7 +9,9 @@ urlpatterns = [
     path('user/', UserView.as_view(), name='user'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('candidate/', candidateView.as_view(), name='candidate'),    path('JobDescription/', JobDescriptionView.as_view(), name='job_description'),
+    path('skills/', views.UserSkills.as_view(), name='user_skills'),
+    path('candidate/', candidateView.as_view(), name='candidate'),
+    path('JobDescription/', JobDescriptionView.as_view(), name='job_description'),
     path('JobDescription/<int:id>/', views.getdobbyid.as_view(), name='job_description_detail'),
     path('upload_Questionnaire/', QuestionCSVUploadView.as_view(), name='upload_questionnaire'),
       # Gemini API endpoints

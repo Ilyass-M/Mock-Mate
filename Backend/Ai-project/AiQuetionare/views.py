@@ -44,9 +44,17 @@ class UserView(APIView):
             if not request.user.is_authenticated:
                 raise CustomError("User not authenticated", code="USER_NOT_AUTHENTICATED")
             user = request.user
+            if(request.data.get('is_recruiter') == False and request.data.get('is_candidate') == False):
+                raise CustomError("User must be either a recruiter or a candidate", code="USER_ROLE_ERROR", status_code=status.HTTP_400_BAD_REQUEST)
+            if(request.data.get('is_recruiter') == True and request.data.get('is_candidate') == True):
+                raise CustomError("User cannot be both a recruiter and a candidate", code="USER_ROLE_ERROR", status_code=status.HTTP_400_BAD_REQUEST)
+            if(request.data.get('phone_number') and len(request.data.get('phone_number')) != 11):
+                raise CustomError("Phone number must be 10 digits", code="PHONE_NUMBER_ERROR", status_code=status.HTTP_400_BAD_REQUEST)
+
             serializer = CustomUserSerializer(user, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
+                
                 return Response(serializer.data, status=status.HTTP_200_OK)
             raise CustomError("Invalid data", code="USER_UPDATE_ERROR", details=serializer.errors, status_code=status.HTTP_400_BAD_REQUEST)
         except ValidationError as ve:
@@ -104,9 +112,17 @@ class UserView(APIView):
             if not request.user.is_authenticated:
                 raise CustomError("User not authenticated", code="USER_NOT_AUTHENTICATED", status_code=status.HTTP_401_UNAUTHORIZED)
             user = request.user
+            if (request.data.get('is_recruiter') == False and request.data.get('is_candidate') == False):
+                raise CustomError("User must be either a recruiter or a candidate", code="USER_ROLE_ERROR", status_code=status.HTTP_400_BAD_REQUEST)
+            if (request.data.get('is_recruiter') == True and request.data.get('is_candidate') == True):
+                raise CustomError("User cannot be both a recruiter and a candidate", code="USER_ROLE_ERROR", status_code=status.HTTP_400_BAD_REQUEST)
+            if (request.data.get('phone_number') and len(request.data.get('phone_number')) != 11):
+                raise CustomError("Phone number must be 11 digits", code="PHONE_NUMBER_ERROR", status_code=status.HTTP_400_BAD_REQUEST)
+
             serializer = CustomUserSerializer(user, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
+                
                 return Response(serializer.data, status=status.HTTP_200_OK)
             raise CustomError("Invalid data", code="USER_UPDATE_ERROR", details=serializer.errors, status_code=status.HTTP_400_BAD_REQUEST)
         except ValidationError as ve:
@@ -484,4 +500,91 @@ class QuestionCSVUploadView(APIView):
                 'code': "PROCESSING_ERROR",
                 'details': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+
+class UserSkills(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            user = CustomUserReadSerializer(request.user)
+            user_id = user.data['id']
+            candidate = Candidate.objects.filter(user=user_id).first()
+            if not candidate:
+                raise CustomError("Candidate not found", code="CANDIDATE_NOT_FOUND", status_code=status.HTTP_404_NOT_FOUND)
+            skills = candidate.skills.all()
+            skills_list = [skill.name for skill in skills]
+            return Response(skills_list, status=status.HTTP_200_OK)
+        except Exception as e:
+            details = getattr(e, 'details', {"error": str(e)})
+            code = getattr(e, 'code', "USER_RETRIEVAL_ERROR")
+            message = getattr(e, 'message', "Failed to retrieve user data")
+            status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
+            raise CustomError(message, code=code, details=details, status_code=status_code)
+    def post(self, request):
+        try:
+            user = CustomUserReadSerializer(request.user)
+            user_id = user.data['id']
+            candidate = Candidate.objects.filter(user=user_id).first()
+            if not candidate:
+                raise CustomError("Candidate not found", code="CANDIDATE_NOT_FOUND", status_code=status.HTTP_404_NOT_FOUND)
+            skills = candidate.skills.all()
+            skills_list = [skill.name for skill in skills]
+            return Response(skills_list, status=status.HTTP_200_OK)
+        except Exception as e:
+            details = getattr(e, 'details', {"error": str(e)})
+            code = getattr(e, 'code', "USER_RETRIEVAL_ERROR")
+            message = getattr(e, 'message', "Failed to retrieve user data")
+            status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
+            raise CustomError(message, code=code, details=details, status_code=status_code)
+    def put(self, request):
+        try:
+            user = CustomUserReadSerializer(request.user)
+            user_id = user.data['id']
+            candidate = Candidate.objects.filter(user=user_id).first()
+            if not candidate:
+                raise CustomError("Candidate not found", code="CANDIDATE_NOT_FOUND", status_code=status.HTTP_404_NOT_FOUND)
+            skills = candidate.skills.all()
+            skills_list = [skill.name for skill in skills]
+            return Response(skills_list, status=status.HTTP_200_OK)
+        except Exception as e:
+            details = getattr(e, 'details', {"error": str(e)})
+            code = getattr(e, 'code', "USER_RETRIEVAL_ERROR")
+            message = getattr(e, 'message', "Failed to retrieve user data")
+            status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
+            raise CustomError(message, code=code, details=details, status_code=status_code)
+    def delete(self, request):
+        try:
+            user = CustomUserReadSerializer(request.user)
+            user_id = user.data['id']
+            candidate = Candidate.objects.filter(user=user_id).first()
+            if not candidate:
+                raise CustomError("Candidate not found", code="CANDIDATE_NOT_FOUND", status_code=status.HTTP_404_NOT_FOUND)
+            skills = candidate.skills.all()
+            for skill in skills:
+                skill.delete()
+            return Response({"message": "Skills deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            details = getattr(e, 'details', {"error": str(e)})
+            code = getattr(e, 'code', "USER_RETRIEVAL_ERROR")
+            message = getattr(e, 'message', "Failed to retrieve user data")
+            status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
+            raise CustomError(message, code=code, details=details, status_code=status_code)
+    def patch(self, request):
+        try:
+            user = CustomUserReadSerializer(request.user)
+            user_id = user.data['id']
+            candidate = Candidate.objects.filter(user=user_id).first()
+            if not candidate:
+                raise CustomError("Candidate not found", code="CANDIDATE_NOT_FOUND", status_code=status.HTTP_404_NOT_FOUND)
+            skills = candidate.skills.all()
+            for skill in skills:
+                skill.name = request.data.get('name', skill.name)
+                skill.level = request.data.get('level', skill.level)
+                skill.save()
+            return Response({"message": "Skills updated successfully"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            details = getattr(e, 'details', {"error": str(e)})
+            code = getattr(e, 'code', "USER_RETRIEVAL_ERROR")
+            message = getattr(e, 'message', "Failed to retrieve user data")
+            status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
+            raise CustomError(message, code=code, details=details, status_code=status_code)

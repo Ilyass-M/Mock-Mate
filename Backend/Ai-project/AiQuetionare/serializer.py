@@ -36,23 +36,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
         user.save()
         return user
     def validate(self, attrs):
-        is_recruiter = attrs.get("is_recruiter")
-        is_candidate = attrs.get("is_candidate")
-        phone_number = attrs.get("phone_number")
-        if phone_number:
-            if not phone_number.isdigit():
-                raise serializers.ValidationError("Phone number must contain only digits.")
-            if len(phone_number) < 10 or len(phone_number) > 15:
-                raise serializers.ValidationError("Phone number must be between 10 and 15 digits long.")
-        # Ensure that exactly one of these is True
-        if (is_recruiter and is_candidate) or (not is_recruiter and not is_candidate):
-            print("Validation error: Both is_recruiter and is_candidate cannot be True or False at the same time.")
-            raise serializers.ValidationError([
-                {"is_recruiter": "You must be either a recruiter or a candidate, but not both."},
-                {"is_candidate": "You must be either a recruiter or a candidate, but not both."}
-            ])
-
-        return attrs
+        return super().validate(attrs)
     
 class CustomUserReadSerializer(serializers.ModelSerializer):
     class Meta:
