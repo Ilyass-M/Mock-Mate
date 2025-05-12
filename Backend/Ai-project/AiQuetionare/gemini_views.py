@@ -6,6 +6,7 @@ import json
 import logging
 from google import genai
 from decouple import config
+from AiQuetionare.models import Question,Category, Assessment, CandidateAnswer, Candidate, JobDescription
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -62,17 +63,31 @@ def generate_question(request):
             response_text = response_text[start_idx:end_idx]
 
         result = json.loads(response_text)
-        for field in ["question", "category", "difficulty"]:
-            if field not in result:
-                result[field] = difficulty.capitalize() if field == "difficulty" else "Not provided"
-        return JsonResponse(result)
+        question_text = result.get("question", "")
+        category_name = result.get("category", "General")
+        difficulty_level = result.get("difficulty", "Beginner").lower()
+
+        # Store the question in the database
+        category, _ = Category.objects.get_or_create(name=category_name)
+        question = Question.objects.create(
+            question_number=f"Q{Question.objects.count() + 1}",
+            question_text=question_text,
+            answer="",  # Placeholder for now
+            category=category,
+            difficulty={"beginner": 2, "intermediate": 1, "advanced": 0}.get(difficulty_level, 2),
+        )
+
+        return JsonResponse({
+            "id": question.id,
+            "question": question.question_text,
+            "category": category.name,
+            "difficulty": difficulty.capitalize()
+        })
 
     except Exception as e:
         logger.error(f"Error in generate_question: {e}")
         return JsonResponse({
-            "question": "Explain your approach to learning new technologies and programming languages.",
-            "category": "Learning & Adaptability",
-            "difficulty": difficulty.capitalize()
+            "error": "Failed to generate question."
         })
 
 @csrf_exempt
@@ -81,18 +96,19 @@ def evaluate_answer(request):
     logger.info("Evaluating answer...")
     try:
         data = json.loads(request.body)
-        question = data.get('question', '')
-        answer = data.get('answer', '')
-        context = data.get('context', '')
+        question_id = data.get('question_id')
+        answer_text = data.get('answer', '')
+        assessment_id = data.get('assessment_id')
+
+        question = Question.objects.get(id=question_id)
+        assessment = Assessment.objects.get(id=assessment_id)
 
         prompt = f"""
         You are an expert technical interviewer evaluating a candidate's response.
 
-        Job Context: {context}
+        Question: {question.question_text}
 
-        Question: {question}
-
-        Candidate's Answer: {answer}
+        Candidate's Answer: {answer_text}
 
         Evaluate the answer based on:
         1. Technical accuracy
@@ -117,21 +133,27 @@ def evaluate_answer(request):
             response_text = response_text[start_idx:end_idx]
 
         result = json.loads(response_text)
+        score = max(0, min(1, float(result.get("score", 0.5))))
+        feedback = result.get("feedback", "Your answer shows understanding but could be improved with more specific details.")
 
-        try:
-            result["score"] = max(0, min(1, float(result.get("score", 0.5))))
-        except:
-            result["score"] = 0.5
+        # Store the candidate's answer in the database
+        CandidateAnswer.objects.create(
+            assessment=assessment,
+            question=question,
+            answer_text=answer_text,
+            similarity_score=score,
+            question_score=score,
+        )
 
-        result["feedback"] = result.get("feedback", "Your answer shows understanding but could be improved with more specific details.")
-
-        return JsonResponse(result)
+        return JsonResponse({
+            "score": score,
+            "feedback": feedback
+        })
 
     except Exception as e:
         logger.error(f"Error in evaluate_answer: {e}")
         return JsonResponse({
-            "score": 0.5,
-            "feedback": "The answer is acceptable but lacks depth and clarity."
+            "error": "Failed to evaluate answer."
         })
 
 @csrf_exempt
