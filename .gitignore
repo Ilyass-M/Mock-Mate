@@ -34,7 +34,8 @@ build/
 *.txt
 # ...but NOT requirements.txt (negate the previous rule)
 !requirements.txt
-
+*.pkl
+.pkl
 # Temporary files
 *.tmp
 *.swp

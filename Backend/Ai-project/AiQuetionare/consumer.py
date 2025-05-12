@@ -257,12 +257,13 @@ class InterviewConsumer(AsyncWebsocketConsumer):
             print(f"Error selecting next question: {e}")
             return None
     
+    
     async def evaluate_answer(self, question, answer_text):
         from sentence_transformers import SentenceTransformer, util
         """Evaluate the candidate's answer using semantic similarity"""
         try:
             # Get original answer
-            original_answer = question.answer
+            original_answer = await sync_to_async(lambda: question.answer)()
 
             # Load model
             model = self._cached_model or SentenceTransformer('all-MiniLM-L6-v2')
@@ -276,43 +277,42 @@ class InterviewConsumer(AsyncWebsocketConsumer):
 
             # Calculate response time
             now = timezone.now()
-
-            response_time = (now - self.assessment.start_time).total_seconds()
-            # 2. update_or_create wrapped
-            answer, created = await sync_to_async(
-                lambda: CandidateAnswer.objects.update_or_create(
-                    assessment=self.assessment,
-                    question=question,
-                    defaults={
-                        'answer_text': answer_text,
-                        'similarity_score': similarity_score,
-                        'response_time_seconds': response_time
-                    }
-                ),
-                thread_sensitive=True
-            )()
-
-            # 3. Save method
-            print("saving")
             
-            await sync_to_async(answer.save)()
+            # Get assessment start time using sync_to_async
+            assessment_start_time = await sync_to_async(lambda: self.assessment.start_time)()
+            response_time = (now - assessment_start_time).total_seconds()
 
-            # print("Answer instance:", answer)
-            print("Answer recorded:", answer)
+            # Create or update the answer using sync_to_async
+            candidate_answer = await sync_to_async(CandidateAnswer.objects.update_or_create)(
+                assessment=self.assessment,
+                question=question,
+                defaults={
+                    'answer_text': answer_text,
+                    'similarity_score': similarity_score,
+                    'response_time_seconds': response_time
+                }
+            )
+            answer = candidate_answer[0]  # update_or_create returns (object, created) tuple
 
             # Update question score based on original score + similarity
             alpha = 0.7
             beta = 0.3
 
-            job_skills = await self.get_job_skills(self.assessment.job_description.id)
+            # Ensure job_skills and candidate_skills are awaited properly
+            job_skills = await self.get_job_skills(await sync_to_async(lambda: self.assessment.job_description.id)())
             candidate_skills = await self.get_candidate_skills()
             questions_df = await self.calculate_question_scores(job_skills, candidate_skills)
 
-            qn_row = questions_df[questions_df["question_number"] == question.question_number]
+            # Get question number using sync_to_async
+            question_number = await sync_to_async(lambda: question.question_number)()
+            qn_row = questions_df[questions_df["question_number"] == question_number]
+            
             if not qn_row.empty:
                 original_score = qn_row["score"].values[0]
                 updated_score = alpha * original_score + beta * similarity_score
-                answer.question_score = updated_score
+                
+                # Update the answer with the score
+                await sync_to_async(lambda: setattr(answer, 'question_score', updated_score))()
                 await sync_to_async(answer.save)()
 
             return {
@@ -323,7 +323,67 @@ class InterviewConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             print(f"Error evaluating answer: {e}")
             return {'similarity_score': 0.0, 'answer_id': None}
-        
+
+
+    async def load_ml_model(self):
+        """Load or train an ML model for hiring decisions"""
+        try:
+            from sklearn.tree import DecisionTreeClassifier
+            import pickle
+            import os
+            
+            # First, check if there's a saved model
+            model_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'ml_models', 'hiring_model.pkl')
+            
+            if os.path.exists(model_path):
+                # Load existing model
+                with open(model_path, 'rb') as f:
+                    model = pickle.load(f)
+                print("Loaded existing hiring model")
+                self.ml_model = model
+                return model
+            else:
+                # Create a default model with sample data
+                print("Creating new hiring model with default data")
+                # Sample data for model training
+                fixed_data = {
+                    'cv_match_score': [0.85, 0.92, 0.75, 0.60, 0.95, 0.78, 0.55, 0.88, 0.70, 0.90,
+                                    0.65, 0.50, 0.82, 0.98, 0.72, 0.68, 0.80, 0.91, 0.58, 0.77],
+                    'weighted_score': [0.82, 0.91, 0.70, 0.55, 0.95, 0.75, 0.48, 0.89, 0.68, 0.92,
+                                    0.60, 0.45, 0.80, 0.98, 0.71, 0.62, 0.78, 0.90, 0.51, 0.73],
+                    'hire_decision':  [1, 1, 1, 0, 1, 1, 0, 1, 0, 1,
+                                    0, 0, 1, 1, 1, 0, 1, 1, 0, 1]
+                }
+                
+                dataset_df = pd.DataFrame(fixed_data)
+                
+                # Train model
+                feature_cols = ["cv_match_score", "weighted_score"]
+                target_col = "hire_decision"
+                
+                X = dataset_df[feature_cols]
+                y = dataset_df[target_col]
+                
+                # Simple decision tree model
+                model = DecisionTreeClassifier(random_state=42, max_depth=3)
+                model.fit(X, y)
+                
+                # Save model if directory exists
+                try:
+                    os.makedirs(os.path.dirname(model_path), exist_ok=True)
+                    with open(model_path, 'wb') as f:
+                        pickle.dump(model, f)
+                    print(f"Model saved to {model_path}")
+                except Exception as e:
+                    print(f"Could not save model: {e}")
+                
+                self.ml_model = model
+                return model
+                
+        except Exception as e:
+            print(f"Error loading ML model: {e}")
+            return None
+
     async def make_hire_decision(self):
         """Make a hiring decision based on the ML model"""
         try:
@@ -333,8 +393,13 @@ class InterviewConsumer(AsyncWebsocketConsumer):
             if not await sync_to_async(answers.exists)():
                 return {"decision": "Not enough data", "probability": [0.5, 0.5]}
             
-            avg_weighted_score = await sync_to_async(answers.aggregate)(Avg('question_score'))['question_score__avg'] or 0.0
-            cv_match_score = self.assessment.candidate.cv_match_score
+            # Get average question score
+            avg_result = await sync_to_async(answers.aggregate)(Avg('question_score'))
+            avg_weighted_score = avg_result.get('question_score__avg', 0.0) or 0.0
+            
+            # Get CV match score - properly handling async context
+            candidate = await sync_to_async(lambda: self.assessment.candidate)()
+            cv_match_score = await sync_to_async(lambda: getattr(candidate, 'cv_match_score', 0.7))()
             
             # Create data for prediction
             new_candidate_data = pd.DataFrame({
@@ -343,21 +408,22 @@ class InterviewConsumer(AsyncWebsocketConsumer):
             })
             
             # Load ML model if not already loaded
-            ml_model = self.ml_model or await self.load_ml_model()
+            if not hasattr(self, 'ml_model') or self.ml_model is None:
+                self.ml_model = await self.load_ml_model()
             
-            if not ml_model:
+            if not self.ml_model:
                 return {"decision": "No model available", "probability": [0.5, 0.5]}
             
             # Make prediction
-            prediction = ml_model.predict(new_candidate_data)
-            probability = ml_model.predict_proba(new_candidate_data)
+            prediction = self.ml_model.predict(new_candidate_data)
+            probability = self.ml_model.predict_proba(new_candidate_data)
             
             # Update assessment
-            self.assessment.weighted_score = avg_weighted_score
-            self.assessment.hire_decision = bool(prediction[0] == 1)
-            self.assessment.hire_probability = probability[0][1]  # Probability of hire (class 1)
-            self.assessment.is_complete = True
-            self.assessment.end_time = timezone.now()
+            await sync_to_async(lambda: setattr(self.assessment, 'weighted_score', avg_weighted_score))()
+            await sync_to_async(lambda: setattr(self.assessment, 'hire_decision', bool(prediction[0] == 1)))()
+            await sync_to_async(lambda: setattr(self.assessment, 'hire_probability', float(probability[0][1])))()  # Probability of hire (class 1)
+            await sync_to_async(lambda: setattr(self.assessment, 'is_complete', True))()
+            await sync_to_async(lambda: setattr(self.assessment, 'end_time', timezone.now()))()
             await sync_to_async(self.assessment.save)()
             
             return {
@@ -367,7 +433,6 @@ class InterviewConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             print(f"Error making hire decision: {e}")
             return {"decision": "Error", "probability": [0.5, 0.5]}
-    
     async def handle_submit_answer(self, question_id, answer_text):
         """Handle submission of an answer"""
         try:
