@@ -36,7 +36,7 @@ const Register = () => {
       };
     });
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -47,13 +47,80 @@ const Register = () => {
       setLoading(false);
       return;
     }
+    if (formData.password.length < 8) {
+      toast.error('Password must be at least 8 characters long');
+      setLoading(false);
+      return;
+    }
+    if (formData.phone_number.length < 10) {
+      toast.error('Phone number must be at least 10 digits long');
+      setLoading(false);
+      return;
+    }
+    if (!formData.email.includes('@')) {
+      toast.error('Please enter a valid email address');
+      setLoading(false);
+      return;
+    }
+    if (!String(formData.username).toLowerCase().match(/^[a-zA-Z0-9]+$/)) {
+      toast.error('Username can only contain letters and numbers');
+      setLoading(false);
+      return;
+    }
+    if (!String(formData.fullname).match(/^[a-zA-Z\s]+$/)) {
+      toast.error('Full name can only contain letters and spaces');
+      setLoading(false);
+      return;
+    }
+    if (!String(formData.phone_number).match(/^[0-9]+$/)) {
+      toast.error('Phone number can only contain numbers');
+      setLoading(false);
+      return;
+    }
 
     try {
       await authService.register(formData);
       toast.success('Account created successfully! Please sign in.');
       navigate('/login');
     } catch (err) {
-      toast.error(err.error || 'An error occurred during registration');
+      console.error('Registration error:', err);
+      
+      // Handle specific error cases from the backend
+      if (err.code === "USER_CREATION_ERROR") {
+        // Handle validation errors from the backend
+        if (err.details) {
+          // Check for specific field errors and display them
+          if (err.details.email) {
+            toast.error(`Email: ${err.details.email[0]}`);
+          }
+          if (err.details.username) {
+            toast.error(`Username: ${err.details.username[0]}`);
+          }
+          if (err.details.phone_number) {
+            toast.error(`Phone number: ${err.details.phone_number[0]}`);
+          }
+          if (err.details.password) {
+            toast.error(`Password: ${err.details.password[0]}`);
+          }
+          // If no specific field errors or other fields, show the general message
+          if (Object.keys(err.details).length === 0 || 
+              (!err.details.email && !err.details.username && 
+               !err.details.phone_number && !err.details.password)) {
+            toast.error(err.error || 'Invalid input. Please check your details.');
+          }
+        } else {
+          toast.error(err.error || 'Invalid input. Please check your details.');
+        }
+      } else if (err.code === "USER_VALIDATION_ERROR") {
+        toast.error(err.error || 'Validation error. Please check your details.');
+      } else if (err.status === 409) {
+        toast.error('Email or username already exists.');
+      } else if (err.status === 500) {
+        toast.error('Server error. Please try again later.');
+      } else {
+        // Default error message if we can't determine the specific error
+        toast.error(err.error || err.message || 'An error occurred during registration. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -70,7 +137,7 @@ const Register = () => {
             Create your account to get started
           </p>
         </div>
-        
+
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -89,7 +156,7 @@ const Register = () => {
                   disabled={loading}
                 />
               </div>
-              
+
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
                   Username
@@ -106,7 +173,7 @@ const Register = () => {
                 />
               </div>
             </div>
-            
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email Address
@@ -130,7 +197,7 @@ const Register = () => {
                 />
               </div>
             </div>
-            
+
             <div>
               <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700 mb-1">
                 Phone Number
@@ -154,7 +221,7 @@ const Register = () => {
                 />
               </div>
             </div>
-            
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password
@@ -181,7 +248,7 @@ const Register = () => {
                 Password must be at least 8 characters
               </p>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 I am registering as:
@@ -211,7 +278,7 @@ const Register = () => {
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="relative flex items-start w-full">
                   <div className="flex items-center h-6">
                     <input
@@ -260,7 +327,7 @@ const Register = () => {
             </button>
           </div>
         </form>
-        
+
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             Already have an account?{' '}

@@ -55,12 +55,12 @@ const Navbar = () => {
                     >
                       Your Profile
                     </Link>
-                    <Link
+                    {/* <Link
                       to="/settings"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Settings
-                    </Link>
+                    </Link> */}
                     <div
                       onClick={handleLogout}
                       className="blockpx-4 px-4 py-2 text-sm text-indigo-500 hover:bg-gray-100 bg-white hover:cursor-pointer font-medium"
