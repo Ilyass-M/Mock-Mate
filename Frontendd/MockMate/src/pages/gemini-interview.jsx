@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { FaSpinner } from 'react-icons/fa';
+import { AiOutlineCheckCircle, AiOutlineCloseCircle } from 'react-icons/ai';
 
 const InterviewInterface = () => {
   const { id } = useParams();
@@ -17,7 +19,6 @@ const InterviewInterface = () => {
   const [interviewComplete, setInterviewComplete] = useState(false);
   const [jobDetails, setJobDetails] = useState(null);
 
-  // Instead of WebSocket connection, we'll fetch job details first
   useEffect(() => {
     const fetchJobDetails = async () => {
       try {
@@ -43,18 +44,13 @@ const InterviewInterface = () => {
     fetchJobDetails();
   }, [id]);
 
-  // Function to call Gemini API for a new question
   const requestNextQuestion = async () => {
     try {
       setIsLoading(true);
-      
-      // Context for the AI to generate relevant questions
       const context = jobDetails ? 
         `Job title: ${jobDetails.title}, Job description: ${jobDetails.description}` :
         `Technical interview for job ID: ${id}`;
-        // Here you would make a call to your backend which interfaces with Gemini API
-      // For demo purposes, I'm simulating the API response
-      // In a real implementation, you'd call your backend endpoint
+
       const response = await fetch('http://localhost:8000/api/gemini/question/', {
         method: 'POST',
         headers: {
@@ -73,16 +69,12 @@ const InterviewInterface = () => {
       }
 
       const data = await response.json();
-      
-      // For demo purposes we'll simulate a response
-      // In real implementation, the data would come from Gemini API
       setCurrentQuestion({
         id: evaluations.length + 1,
         question_text: data.question || "Tell me about your experience with React?",
         category: data.category || "Frontend Development",
         difficulty: data.difficulty || "Intermediate"
       });
-      
       setIsLoading(false);
     } catch (error) {
       setError('Error generating question: ' + error.message);
@@ -90,13 +82,11 @@ const InterviewInterface = () => {
     }
   };
 
-  // Function to submit answer to Gemini API for evaluation
   const submitAnswer = async () => {
     if (!currentQuestion || !answer.trim()) return;
 
     try {
       setIsLoading(true);
-        // Here you would make a call to your backend which interfaces with Gemini API
       const response = await fetch('http://localhost:8000/api/gemini/evaluate/', {
         method: 'POST',
         headers: {
@@ -115,23 +105,20 @@ const InterviewInterface = () => {
       }
 
       const data = await response.json();
-      
-      // Process the evaluation
       const evaluation = {
         question: currentQuestion.question_text,
         answer: answer.trim(),
-        similarity_score: data.score || 0.75, // Score from 0 to 1
+        // similarity_score: data.score || 0.75,
         feedback: data.feedback || "Good answer! You demonstrated knowledge of the subject.",
         id: currentQuestion.id
       };
-      
+
       setEvaluations(prev => [...prev, evaluation]);
       setAnsweredQuestions(prev => prev + 1);
       setAnswer('');
       setCurrentQuestion(null);
       setIsLoading(false);
-      
-      // If we've asked enough questions, finish the interview
+
       if (answeredQuestions + 1 >= 5) {
         finishInterview();
       }
@@ -141,11 +128,9 @@ const InterviewInterface = () => {
     }
   };
 
-  // Function to finalize the interview and generate a result
   const finishInterview = async () => {
     try {
       setIsLoading(true);
-        // Here you would make a call to your backend which interfaces with Gemini API
       const response = await fetch('http://localhost:8000/api/gemini/result/', {
         method: 'POST',
         headers: {
@@ -163,14 +148,12 @@ const InterviewInterface = () => {
       }
 
       const data = await response.json();
-      
-      // Process the result
       setResult({
         decision: data.decision || "Hire",
         probability: data.probability || [0.2, 0.8],
         summary: data.summary || "The candidate demonstrated good knowledge of the required skills."
       });
-      
+
       setInterviewComplete(true);
       setIsLoading(false);
     } catch (error) {
@@ -201,7 +184,7 @@ const InterviewInterface = () => {
             </div>
           )}
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/')}
             className="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700"
           >
             Return to Dashboard
@@ -258,9 +241,6 @@ const InterviewInterface = () => {
                     >
                       <div className="flex justify-between items-center border-b pb-2 mb-2">
                         <span className="font-medium">Question {index + 1}</span>
-                        <span className={getScoreColor(evaluation.similarity_score)}>
-                          Score: {Math.round(evaluation.similarity_score * 100)}%
-                        </span>
                       </div>
                       <p className="text-sm mb-2"><span className="font-medium">Q:</span> {evaluation.question}</p>
                       <p className="text-sm mb-2"><span className="font-medium">A:</span> {evaluation.answer}</p>
@@ -327,7 +307,7 @@ const InterviewInterface = () => {
 
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900 mb-4"></div>
+            <FaSpinner className="animate-spin text-gray-800 h-12 w-12 mb-4" />
             <p className="text-gray-600">Loading...</p>
           </div>
         )}
@@ -401,9 +381,7 @@ const InterviewInterface = () => {
                 >
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-gray-700 font-medium">Question {index + 1}</span>
-                    <span className={getScoreColor(evaluation.similarity_score)}>
-                      Score: {Math.round(evaluation.similarity_score * 100)}%
-                    </span>
+                    
                   </div>
                   <p className="text-sm text-gray-600 mb-1"><span className="font-medium">Q:</span> {evaluation.question}</p>
                   {evaluation.feedback && (
