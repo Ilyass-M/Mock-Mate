@@ -110,16 +110,7 @@ class Question(models.Model):
         return f"Q{self.question_number}: {self.question_text[:50]}..."
 
 
-class QuestionRelationship(models.Model):
-    """Represents the graph relationship between questions based on difficulty and category"""
-    from_question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='next_questions')
-    to_question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='previous_questions')
-    
-    class Meta:
-        unique_together = ('from_question', 'to_question')
-    
-    def __str__(self):
-        return f"{self.from_question.question_number} -> {self.to_question.question_number}"
+
 
 import uuid
 import os
@@ -176,20 +167,3 @@ class CandidateAnswer(models.Model):
         return f"Answer for {self.question.question_number} by {self.assessment.candidate}"
 
 
-class MLModel(models.Model):
-    """Model to store trained machine learning models"""
-    MODEL_TYPES = [
-        ('decision_tree', 'Decision Tree'),
-        ('neural_network', 'Neural Network'),
-    ]
-    
-    name = models.CharField(max_length=100)
-    model_type = models.CharField(max_length=50, choices=MODEL_TYPES)
-    model_file = models.FileField(upload_to='ml_models/')
-    version = models.CharField(max_length=20)
-    created_at = models.DateTimeField(auto_now_add=True)
-    accuracy = models.FloatField(default=0.0)
-    is_active = models.BooleanField(default=True)
-    
-    def __str__(self):
-        return f"{self.name} v{self.version}"

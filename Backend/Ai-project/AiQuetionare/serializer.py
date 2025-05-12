@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Skill, JobDescription, Category, Question, QuestionRelationship, Candidate, Assessment, CandidateAnswer, MLModel
+from .models import Skill, JobDescription, Category, Question, Candidate, Assessment, CandidateAnswer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import authenticate
 from AiQuetionare.fetchskillsfromcv import get_data_from_cv
@@ -130,15 +130,6 @@ class QuestionSerializer(serializers.ModelSerializer):
         ]
 
 
-class QuestionRelationshipSerializer(serializers.ModelSerializer):
-    from_question = QuestionSerializer(read_only=True)
-    to_question = QuestionSerializer(read_only=True)
-
-    class Meta:
-        model = QuestionRelationship
-        fields = ['id', 'from_question', 'to_question']
-
-
 class CandidateSerializer(serializers.ModelSerializer):
     # user = CustomUserReadSerializer(read_only=True, required=False)
     skills = SkillSerializer(many=True, required=False)
@@ -232,13 +223,7 @@ class CandidateAnswerSerializer(serializers.ModelSerializer):
         ]
 
 
-class MLModelSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = MLModel
-        fields = [
-            'id', 'name', 'model_type', 'model_file', 'version', 'created_at', 
-            'accuracy', 'is_active'
-        ]
+
 
 
 class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):

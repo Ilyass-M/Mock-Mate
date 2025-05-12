@@ -6,11 +6,10 @@ from AiQuetionare.models import (
     JobDescription,
     Category,
     Question,
-    QuestionRelationship,
     Candidate,
     Assessment,
     CandidateAnswer,
-    MLModel
+    
 )
 class JobDescriptionAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
@@ -45,8 +44,7 @@ admin.site.register(Skill)
 admin.site.register(JobDescription, JobDescriptionAdmin)
 admin.site.register(Category)
 admin.site.register(Question)
-admin.site.register(QuestionRelationship)
+# admin.site.register(QuestionRelationship)
 admin.site.register(Candidate)
 admin.site.register(Assessment, AssessmentAdmin)
 admin.site.register(CandidateAnswer)
-admin.site.register(MLModel)
