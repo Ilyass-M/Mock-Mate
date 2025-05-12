@@ -56,7 +56,7 @@ CORS_ALLOWED_ORIGINS = [
     "ws://127.0.0.1:8000",
 
 ]
-
+APPEND_SLASH=False
 CORS_ALLOW_CREDENTIALS = True  
 
 

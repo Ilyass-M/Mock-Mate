@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Interview from "./pages/interview";
+import GeminiInterview from "./pages/gemini-interview";
 import { AuthProvider } from "./context/AuthContext";
 import { Toaster } from "sonner";
 import "./App.css";
@@ -20,7 +21,7 @@ function App() {
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
             <Route path="/interview/:id" element={<Interview />} />
-            
+            <Route path="/gemini-interview/:id" element={<GeminiInterview />} />
           </Route>
         </Routes>
       </Router>

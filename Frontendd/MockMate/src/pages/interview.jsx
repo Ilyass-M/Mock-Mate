@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
 const InterviewInterface = () => {
   const { id } = useParams();
   const { user } = useAuth();
@@ -17,10 +16,12 @@ const InterviewInterface = () => {
   const [interviewComplete, setInterviewComplete] = useState(false);
 
   const socketRef = useRef(null);
-
-  useEffect(() => {
+    const cookies = new Cookies();
+    useEffect(() => {
+    // console.log("All Cookies:", document.cookie);
+    const token = cookies.get("access-token");
     // const wsProtocol = window.location.protocol ===  'ws:';
-    const wsUrl = `ws://127.0.0.1:8000/interview/${id}/?token=${user?.accessToken}`;
+    const wsUrl = `ws://localhost:8000/interview/${id}/?token=${"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Im1odXphaWZhOTFAZ21haWwuY29tIiwiaWQiOiI2N2UzMTM0ZGNjMTI3NTE1MDI0M2JmYWEiLCJpYXQiOjE3NDI5NDkwNjAsImV4cCI6MTc0Mjk1MjY2MH0.Kv55m1E5hivE57IGrCGzmGME39h5hrW4PAnVe6eS1m4"}`;
 
     const ws = new WebSocket(wsUrl);
     socketRef.current = ws;

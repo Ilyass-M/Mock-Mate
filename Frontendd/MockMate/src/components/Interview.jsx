@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -21,7 +21,8 @@ const Interview = () => {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop().split(';').shift();
-  };  useEffect(() => {
+  };
+  useEffect(() => {
     const params = new URLSearchParams(location.search);
     const sessionId = params.get('session');
     const jobId = params.get('job');
@@ -32,21 +33,13 @@ const Interview = () => {
       return;
     }
 
-    setInterviewId(jobId);
-    // Connect directly to the WebSocket without fetching job details
-    connectWebSocket(jobId);
-    
-    // Cleanup function to close WebSocket when component unmounts
-    return () => {
-      if (ws.current) {
-        ws.current.close();
-      }
-    };
-  }, [location.search, navigate, connectWebSocket]);
+    setInterviewId(sessionId);
+    fetchJobDetails(jobId);
+  }, [location.search, navigate]);
 
   const fetchJobDetails = async (jobId) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/JobDescription/${jobId}/`, {
+      const response = await fetch(`http://localhost:8000/api/jobs/${jobId}/`, {
         credentials: 'include'
       });
 
@@ -55,7 +48,6 @@ const Interview = () => {
       }
 
       const data = await response.json();
-      console.log("Job Details:", data);
       setJobDetails(data);
       connectWebSocket(interviewId);
     } catch (error) {
@@ -71,15 +63,15 @@ const Interview = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-  const connectWebSocket = useCallback((id) => {
+
+  const connectWebSocket = (id) => {
     if (!id) {
       console.error("Interview ID is missing");
       return;
     }
 
-    // Use the hardcoded token for now
-    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ3NjQ3Mzk2LCJpYXQiOjE3NDcwNDI1OTYsImp0aSI6IjgzZDRmNDRhNmY3NzQ5NGViOWMzOGU2ZTJmYTc3ZjIyIiwidXNlcl9pZCI6MX0.jcPUcqdPJKY50S-5E59a2oZ4epw4JrzeDguyKjI9DP4";
-    console.log("Using token:", token);
+      const token = cookies.get('access-token');
+    // const token = user?.token; // Assuming the token is available in the user context
     const wsUrl = `ws://127.0.0.1:8000/interview/${id}/?token=${token}`;
     ws.current = new WebSocket(wsUrl);
 

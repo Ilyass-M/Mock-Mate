@@ -357,7 +357,21 @@ class JobDescriptionView(APIView):
             message = getattr(e, 'message', "Failed to process request")
             status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
             raise CustomError(message, code=code, details=details, status_code=status_code)
-        
+
+class getdobbyid(APIView):
+    """
+    API endpoint to get a job description by ID.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id):
+        try:
+            job_description = JobDescription.objects.get(id=id)
+            serializer = JobDescriptionSerializer(job_description)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except JobDescription.DoesNotExist:
+            raise CustomError("Job Description not found", code="JOB_DESCRIPTION_NOT_FOUND", status_code=status.HTTP_404_NOT_FOUND)
+
 class QuestionCSVUploadView(APIView):
     """
     API endpoint to upload a CSV file of questions and populate the Questions table.

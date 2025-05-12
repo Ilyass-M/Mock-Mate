@@ -9,7 +9,7 @@ from AiQuetionare.models import Candidate, JobDescription, Question, Assessment,
 from AiQuetionare.serializer import CandidateSerializer, JobDescriptionSerializer, QuestionSerializer, AssessmentSerializer, CandidateAnswerSerializer
 from asgiref.sync import sync_to_async, async_to_sync
 from sentence_transformers import util
-from sklearn.metrics.pairwise import cosine_similarity
+# from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 import pandas as pd
 import pickle
@@ -43,7 +43,7 @@ class InterviewConsumer(AsyncWebsocketConsumer):
             return None
 
     async def load_sentence_transformer_model(self):
-        from sentence_transformers import SentenceTransformer
+        # from sentence_transformers import SentenceTransformer
         try:
             if not hasattr(self, '_cached_model'):
                 print("Loading SentenceTransformer model...")
@@ -261,7 +261,7 @@ class InterviewConsumer(AsyncWebsocketConsumer):
     
     
     async def evaluate_answer(self, question, answer_text):
-        from sentence_transformers import SentenceTransformer, util
+        # from sentence_transformers import SentenceTransformer, util
         """Evaluate the candidate's answer using semantic similarity"""
         try:
             # Get original answer
@@ -330,7 +330,7 @@ class InterviewConsumer(AsyncWebsocketConsumer):
     async def load_ml_model(self):
         """Load or train an ML model for hiring decisions"""
         try:
-            from sklearn.tree import DecisionTreeClassifier
+            # from sklearn.tree import DecisionTreeClassifier
             import pickle
             import os
             
