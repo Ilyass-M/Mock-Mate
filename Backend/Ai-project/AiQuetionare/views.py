@@ -6,7 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
-from AiQuetionare.serializer import EmailTokenObtainPairSerializer, CustomUserSerializer, CustomUserReadSerializer, CandidateSerializer, JobDescriptionSerializer
+from AiQuetionare.serializer import EmailTokenObtainPairSerializer, CustomUserSerializer, CustomUserReadSerializer, CandidateSerializer, JobDescriptionSerializer, Category, Question
 from AiQuetionare.Error import CustomError
 from django.shortcuts import get_object_or_404
 from django.db.models import Count
@@ -14,7 +14,9 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from AiQuetionare.models import Candidate, JobDescription
 from django.contrib.auth.models import Group
-
+import pandas as pd
+from io import StringIO
+import csv
 
 User = get_user_model()
 
@@ -356,3 +358,115 @@ class JobDescriptionView(APIView):
             status_code = getattr(e, 'status_code', status.HTTP_400_BAD_REQUEST)
             raise CustomError(message, code=code, details=details, status_code=status_code)
         
+class QuestionCSVUploadView(APIView):
+    """
+    API endpoint to upload a CSV file of questions and populate the Questions table.
+    Only admin users can access this endpoint.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        try:
+            # Check if a file was uploaded
+            if 'file' not in request.FILES:
+                raise CustomError("No file uploaded", code="NO_FILE", status_code=status.HTTP_400_BAD_REQUEST)
+            
+            file = request.FILES['file']
+            
+            # Check if the file is a CSV
+            if not file.name.endswith('.csv'):
+                raise CustomError("File must be a CSV", code="INVALID_FILE_TYPE", status_code=status.HTTP_400_BAD_REQUEST)
+            
+            # Read the CSV file
+            try:
+                # Handle encoding issues by trying multiple encodings
+                try:
+                    content = file.read().decode('utf-8')
+                except UnicodeDecodeError:
+                    content = file.read().decode('latin-1')  # Fallback to latin-1 encoding
+                
+                csv_data = StringIO(content)
+                df = pd.read_csv(csv_data)
+                
+                # Check if the CSV has the required columns
+                required_columns = ['Question Number', 'Question', 'Answer', 'Category', 'Difficulty']
+                missing_columns = [col for col in required_columns if col not in df.columns]
+                
+                if missing_columns:
+                    raise CustomError(
+                        f"Missing required columns: {', '.join(missing_columns)}", 
+                        code="MISSING_COLUMNS", 
+                        status_code=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                # Validate difficulty values
+                valid_difficulties = {'Easy': 2, 'Medium': 1, 'Hard': 0}
+                invalid_difficulties = df[~df['Difficulty'].isin(valid_difficulties.keys())]['Difficulty'].unique()
+                
+                if len(invalid_difficulties) > 0:
+                    raise CustomError(
+                        f"Invalid difficulty values: {', '.join(map(str, invalid_difficulties))}. Must be one of: Easy, Medium, Hard", 
+                        code="INVALID_DIFFICULTY", 
+                        status_code=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                # Initialize stats
+                stats = {'created': 0, 'updated': 0, 'failed': 0, 'errors': []}
+                
+                # Process each row
+                for idx, row in df.iterrows():
+                    try:
+                        # Get or create the category
+                        category_name = row['Category'].strip()
+                        category, _ = Category.objects.get_or_create(name=category_name)
+
+                        # Map difficulty string to integer value
+                        difficulty_value = valid_difficulties[row['Difficulty']]
+                        
+                        # Create or update the question
+                        question_number = str(row['Question Number']).strip()
+                        question_text = row['Question'].strip()
+                        answer = row['Answer'].strip()
+                        
+                        question, created = Question.objects.update_or_create(
+                            question_number=question_number,
+                            defaults={
+                                'question_text': question_text,
+                                'answer': answer,
+                                'category': category,
+                                'difficulty': difficulty_value,
+                                'embedding': None  # Placeholder for embedding
+                            }
+                        )
+                        
+                        # Update stats
+                        if created:
+                            stats['created'] += 1
+                        else:
+                            stats['updated'] += 1
+                            
+                    except Exception as e:
+                        stats['failed'] += 1
+                        stats['errors'].append(f"Row {idx+2}: {str(e)}")
+            
+                return Response({
+                    'message': f"Processed {len(df)} questions.",
+                    'stats': stats
+                }, status=status.HTTP_200_OK)
+                
+            except pd.errors.ParserError:
+                raise CustomError("Invalid CSV format", code="INVALID_CSV", status_code=status.HTTP_400_BAD_REQUEST)
+                
+        except CustomError as ce:
+            return Response({
+                'message': ce.message,
+                'code': ce.code,
+                'details': ce.details
+            }, status=ce.status_code)
+            
+        except Exception as e:
+            return Response({
+                'message': "Failed to process CSV file",
+                'code': "PROCESSING_ERROR",
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

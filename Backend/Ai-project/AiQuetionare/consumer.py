@@ -115,15 +115,16 @@ class InterviewConsumer(AsyncWebsocketConsumer):
                         assessment=self.assessment, question=question['id']
                     ).exists()
                 )()
-                questions_data.append({
-                    'question_number': question['question_number'],
-                    'category': question['category'],
-                    'difficulty': question['difficulty'],
-                    'jd_score': jd_score,
-                    'user_score': user_score,
-                    'score': score,
-                    'asked': asked
-                })
+                if( not asked):
+                    questions_data.append({
+                        'question_number': question['question_number'],
+                        'category': question['category'],
+                        'difficulty': question['difficulty'],
+                        'jd_score': jd_score,
+                        'user_score': user_score,
+                        'score': score,
+                        'asked': asked
+                    })
                 # print("Questions_data", questions_data)
             return pd.DataFrame(questions_data)
         except Exception as e:
