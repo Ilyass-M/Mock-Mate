@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "../context/AuthContext"
 import axios from "axios"
-
+import {toast} from "sonner"
 const Profile = () => {
 
     const { user } = useAuth()
@@ -68,7 +68,7 @@ const Profile = () => {
             const timer = setTimeout(() => {
                 setError(null)
             }
-            , 3000)
+                , 3000)
             return () => clearTimeout(timer)
         }
     }, [success, error])
@@ -137,6 +137,7 @@ const Profile = () => {
     }
     const addskilltocandidate = async (skill) => {
         try {
+
             const response = await axios.post(url + "/api/skills/", { "skill": skill }, { withCredentials: true })
             if (response.status === 200) {
                 console.log("Skill added successfully:", response.data)
@@ -152,10 +153,17 @@ const Profile = () => {
         }
     }
     const addSkill = () => {
+        for (const skill of profileData.skills) {
+            if (skill.trim().toLowerCase() === newSkill.name.trim().toLowerCase()) {
+                toast.error("Skill already exists.")
+                setError("Skill already exists.")
+                return
+            }
+        }
         if (newSkill.name.trim()) {
             setProfileData((prevData) => ({
                 ...prevData,
-                skills: [...prevData.skills, newSkill.name],
+                skills: [...prevData.skills, { name: newSkill.name, level: 0 }],
             }))
             setNewSkill({ name: "" })
         }
@@ -203,7 +211,7 @@ const Profile = () => {
             <div className="max-w-4xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
                     {/* Left Column - Profile Picture & Basic Info */}
-                    
+
 
                     {/* Right Column - Profile Details & Skills */}
                     <div className="md:col-span-2">
