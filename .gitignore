@@ -4,7 +4,6 @@ __pycache__/
 *$py.class
 
 # Environment-related ignores
-.env
 *env/
 env/
 venv/
@@ -13,7 +12,6 @@ venv/
 */venv/
 */.venv/
 .idea/
-.vscode/
 
 # Compiled files
 *.pyc
@@ -46,3 +44,5 @@ Thumbs.db
 
 # Other
 *.sqlite
+config.bat
+node_modules

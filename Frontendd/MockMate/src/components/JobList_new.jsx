@@ -8,6 +8,8 @@ const JobList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     fetchJobs();
@@ -29,8 +31,7 @@ const JobList = () => {
       setLoading(false);
     }
   };
-  
-  const startInterview = (jobId) => {
+    const startInterview = (jobId) => {
     navigate(`/gemini-interview/${jobId}`);
   };
 
@@ -83,8 +84,7 @@ const JobList = () => {
               className="w-full px-4 py-3 pl-10 pr-10 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <div className="absolute left-3 top-3.5 text-gray-400">
+            />            <div className="absolute left-3 top-3.5 text-gray-400">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
@@ -162,17 +162,20 @@ const JobList = () => {
                         ))}
                       </ul>
                     </div>
-                  </div>
-                  <div>
+                  </div>                  <div>
                     <h4 className="text-sm font-medium text-gray-900">Description</h4>
-                    <p className="mt-1 text-sm text-gray-500 line-clamp-3">
-                      {job.description.replace(/\\r\\n/g, ' ')} {/* Replace \r\n with a space */}
+                    <p className="mt-1 text-sm text-gray-500 line-clamp-3 cursor-pointer hover:text-indigo-600"
+                       onClick={() => {
+                         setSelectedJob(job);
+                         setShowModal(true);
+                       }}>
+                      {job.description.replace(/\\r\\n/g, ' ')} 
+                      <span className="text-indigo-600 font-medium inline-block ml-1">Read more</span>
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="px-4 py-4 sm:px-6">
-                <button
+              <div className="px-4 py-4 sm:px-6">                <button
                   onClick={() => {
                     navigate(`/gemini-interview/${job.id}`);
                   }}
@@ -184,8 +187,68 @@ const JobList = () => {
                   Start Interview
                 </button>
               </div>
+            </div>          ))}
+        </div>
+      )}
+      
+      {/* Description Modal */}
+      {showModal && selectedJob && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-800 bg-opacity-75 flex items-center justify-center p-4">
+          <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-auto">
+            <div className="px-6 py-5 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-gray-900">{selectedJob.title}</h3>
+                <button
+                  className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                  onClick={() => setShowModal(false)}
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
-          ))}
+            <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Skills Required</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedJob.skills.map((skill, index) => (
+                    <span 
+                      key={index}
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                    >
+                      {skill.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Full Description</h4>
+                <div className="text-gray-700 text-sm whitespace-pre-line">
+                  {selectedJob.description}
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
+              <div className="flex justify-end">
+                <button
+                  className="mr-3 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                  onClick={() => setShowModal(false)}
+                >
+                  Close
+                </button>
+                <button
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none"
+                  onClick={() => {
+                    setShowModal(false);
+                    navigate(`/gemini-interview/${selectedJob.id}`);
+                  }}
+                >
+                  Start Interview
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

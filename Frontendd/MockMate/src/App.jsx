@@ -10,6 +10,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { Toaster } from "sonner";
 import "./App.css";
 import Profile from "./pages/Profile";
+import AllJobs from "./pages/AllJobs";
 
 function App() {
   return (
@@ -17,13 +18,13 @@ function App() {
       <Router>
         <Toaster richColors position="top-center" />
         <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Home />} />
+          <Route path="/" element={<Layout />}>            <Route index element={<Home />} />
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
             <Route path="profile" element={<Profile />} />
             <Route path="/interview/:id" element={<Interview />} />
             <Route path="/gemini-interview/:id" element={<GeminiInterview />} />
+            <Route path="/all-jobs" element={<AllJobs />} />
           </Route>
         </Routes>
       </Router>
