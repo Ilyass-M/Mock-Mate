@@ -3,6 +3,7 @@ import CVUpload from "../components/CVUpload";
 import JobList from "../components/JobList";
 import { ArrowRight, CheckCircle, FileText, Briefcase, MessageSquare } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { Link } from "react-router-dom";
 
 const Home = () => {
   const { user } = useAuth();
@@ -97,11 +98,20 @@ const Home = () => {
 
       {user && (
         <section id="jobs" className="py-16 px-6 sm:px-10 md:px-20 bg-white">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900">Available Job Positions</h2>
+          <div className="text-center mb-12">            <h2 className="text-3xl font-bold text-gray-900">Available Job Positions</h2>
             <p className="text-gray-500 mt-2 text-lg">Choose a position and practice targeted questions</p>
           </div>
-          <JobList />
+          <JobList limit={3} />
+          <div className="flex justify-center mt-8">
+            <Link 
+              to="/all-jobs"
+               
+              className=" inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              See More Jobs
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Link>
+          </div>
         </section>
       )}
 
